@@ -27,7 +27,10 @@ import android.view.animation.Interpolator;
 import androidx.annotation.NonNull;
 import androidx.core.view.ViewCompat;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.BuildVars;
+import org.telegram.ui.Cells.BaseCell;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +43,7 @@ import java.util.List;
  * @see RecyclerView#setItemAnimator(RecyclerView.ItemAnimator)
  */
 public class DefaultItemAnimator extends SimpleItemAnimator {
+    private static final String TAG = "DefaultItemAnimator";
     private static final boolean DEBUG = BuildVars.DEBUG_VERSION;
 
     private static TimeInterpolator sDefaultInterpolator;
@@ -108,6 +112,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     @Override
     public void runPendingAnimations() {
+        Log.d(TAG, "runPendingAnimations()");
         boolean removalsPending = !mPendingRemovals.isEmpty();
         boolean movesPending = !mPendingMoves.isEmpty();
         boolean changesPending = !mPendingChanges.isEmpty();
@@ -244,6 +249,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     @Override
     public boolean animateAdd(final RecyclerView.ViewHolder holder) {
+        Log.d(TAG, "animateAdd()");
         resetAnimation(holder);
         holder.itemView.setAlpha(0);
         mPendingAdditions.add(holder);
@@ -251,6 +257,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     public void animateAddImpl(final RecyclerView.ViewHolder holder) {
+        Log.d(TAG, "animateAddImpl()");
         final View view = holder.itemView;
         final ViewPropertyAnimator animation = view.animate();
         mAddAnimations.add(holder);
@@ -279,6 +286,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     @Override
     public boolean animateMove(final RecyclerView.ViewHolder holder, ItemHolderInfo info, int fromX, int fromY,
             int toX, int toY) {
+        Log.d(TAG, "animateMove()");
         final View view = holder.itemView;
         fromX += (int) holder.itemView.getTranslationX();
         fromY += (int) holder.itemView.getTranslationY();
@@ -304,6 +312,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     protected void animateMoveImpl(final RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
+        Log.d(TAG, "animateMoveImpl()");
         int fromX = moveInfo.fromX;
         int fromY = moveInfo.fromY;
         int toX = moveInfo.toX;
@@ -473,7 +482,11 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     @Override
     public void endAnimation(RecyclerView.ViewHolder item) {
-        final View view = item.itemView;
+        View view = item.itemView;
+        if (view instanceof BaseCell)
+        {
+            view = ((BaseCell) view).cellDrawingView;
+        }
         // this will trigger end callback which should set properties to their target values.
         view.animate().cancel();
         // TODO if some other animations are chained to end, how do we cancel them as well?

@@ -55,6 +55,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Property;
 import android.util.SparseArray;
@@ -68,6 +69,7 @@ import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroupOverlay;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
@@ -4162,7 +4164,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         chatListViewPaddingTop = 0;
         invalidateChatListViewTopPadding();
         if (MessagesController.getGlobalMainSettings().getBoolean("view_animations", true)) {
-            chatListItemAnimator = new ChatListItemAnimator(this, chatListView) {
+            chatListItemAnimator = new ChatListItemAnimator(this, chatListView, contentView.getOverlay()) {
 
                 Runnable finishRunnable;
 
@@ -4421,6 +4423,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         });
         contentView.addView(chatListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+//        AndroidUtilities.disableParentsClip(chatListView);
+        chatListView.setBackgroundColor(Color.BLACK);
+        contentView.setBackgroundColor(Color.RED);
+
         chatListView.setOnItemLongClickListener(onItemLongClickListener);
         chatListView.setOnItemClickListener(onItemClickListener);
         chatListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -20897,6 +20904,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+//            Log.d("ChatActivity", "onCreateViewHolder() " + viewType);
             View view = null;
             if (viewType == 0) {
                 if (!chatMessageCellsCache.isEmpty()) {
@@ -21628,11 +21636,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 view = new ChatLoadingCell(mContext);
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+            Log.d("ChatActivity", "onCreateViewHolder() " + viewType + " -> " + view);
             return new RecyclerListView.Holder(view);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            Log.d("ChatActivity", "onBindViewHolder() " + position + " -> " + getItemViewType(position));
             if (position == botInfoRow) {
                 BotHelpCell helpView = (BotHelpCell) holder.itemView;
                 if (UserObject.isReplyUser(currentUser)) {

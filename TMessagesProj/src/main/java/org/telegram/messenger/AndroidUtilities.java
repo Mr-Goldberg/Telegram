@@ -48,6 +48,7 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -3680,6 +3681,39 @@ public class AndroidUtilities {
                 view.setVisibility(View.GONE);
             }
             view.setTag(null);
+        }
+    }
+
+    // FIXME
+    public static void disableParentsClip(@NonNull View view) {
+        ViewGroup viewGroup;
+        if (view instanceof ViewGroup) {
+            Log.d("AndroidUtilities", "disableParentsClip() self " + view);
+            viewGroup = (ViewGroup) view;
+            viewGroup.setClipChildren(false);
+            viewGroup.setClipToPadding(false);
+        }
+
+        while (view.getParent() != null && view.getParent() instanceof ViewGroup) {
+            viewGroup = (ViewGroup) view.getParent();
+            Log.d("AndroidUtilities", "disableParentsClip() " + viewGroup);
+            viewGroup.setClipChildren(false);
+            viewGroup.setClipToPadding(false);
+            view = viewGroup;
+        }
+    }
+
+    public static void disableClip(@NonNull ViewGroup viewGroup) {
+        viewGroup.setClipChildren(false);
+        viewGroup.setClipToPadding(false);
+    }
+
+    public static void enableParentsClip(@NonNull View view) {
+        while (view.getParent() != null && view.getParent() instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) view.getParent();
+            viewGroup.setClipChildren(true);
+            viewGroup.setClipToPadding(true);
+            view = viewGroup;
         }
     }
 }

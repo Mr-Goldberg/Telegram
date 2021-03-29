@@ -49,6 +49,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
 import android.util.StateSet;
@@ -835,6 +836,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         };
         roundVideoPlayingDrawable = new RoundVideoPlayingDrawable(this);
+
+        myPaint.setColor(Color.GRAY);
+        myPaint.setStyle(Paint.Style.FILL);
     }
 
     private void createPollUI() {
@@ -6846,6 +6850,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 videoRadialProgress.setProgressRect(videoButtonX, videoButtonY, videoButtonX + AndroidUtilities.dp(24), videoButtonY + AndroidUtilities.dp(24));
             }
         }
+
+        super.onLayout(changed, left, top, right, bottom);
     }
 
     public boolean needDelayRoundProgressDraw() {
@@ -9642,15 +9648,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+
     public void setDrawableBoundsInner(Drawable drawable, int x, int y, int w, int h) {
         if (drawable != null) {
             drawable.setBounds(x + transitionParams.deltaLeft, y + transitionParams.deltaTop, x + w + transitionParams.deltaRight, y + h + transitionParams.deltaBottom);
         }
     }
 
+    private static final String LTAG = "ChatMessageCell";
+    private static final Paint myPaint = new Paint();
+
     @SuppressLint("WrongCall")
     @Override
-    protected void onDraw(Canvas canvas) {
+    protected void onCellDraw(Canvas canvas) {
+        Log.d(LTAG, "onCellDraw() " + this);
+
         if (currentMessageObject == null) {
             return;
         }
@@ -9711,6 +9723,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         }
+
+
+        canvas.drawRoundRect(1,1,getWidth()-2,getHeight()-2, 8,8,myPaint);
+//        if(true)return;
+
 
         Drawable currentBackgroundShadowDrawable;
         int additionalTop = 0;
@@ -9924,6 +9941,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
 
+        // Draw message bubble
         if (drawBackground && currentBackgroundDrawable != null && (currentPosition == null || isDrawSelectionBackground() && (currentMessageObject.isMusic() || currentMessageObject.isDocument()))) {
             if (isHighlightedAnimated) {
                 currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
@@ -10006,7 +10024,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
         }
+
         if (isHighlightedAnimated) {
+            Log.d(LTAG, "onDraw() isHighlightedAnimated" + this);
             long newTime = System.currentTimeMillis();
             long dt = Math.abs(newTime - lastHighlightProgressTime);
             if (dt > 17) {
@@ -10023,7 +10043,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 ((View) getParent()).invalidate();
             }
         }
-
         int restore = Integer.MIN_VALUE;
         if (alphaInternal != 1.0f) {
             int top = 0;

@@ -6,7 +6,9 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.os.Build;
+import android.util.Log;
 import android.view.View;
+import android.view.ViewGroupOverlay;
 import android.view.ViewPropertyAnimator;
 import android.view.animation.OvershootInterpolator;
 
@@ -18,6 +20,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
+import org.telegram.ui.Cells.BaseCell;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
@@ -32,8 +35,11 @@ import java.util.List;
 
 public class ChatListItemAnimator extends DefaultItemAnimator {
 
+    private static final String TAG = "ChatListItemAnimator";
+
     private final ChatActivity activity;
     private final RecyclerListView recyclerListView;
+    private final ViewGroupOverlay overlay;
 
     private HashMap<Integer, MessageObject.GroupedMessages> willRemovedGroup = new HashMap<>();
     private ArrayList<MessageObject.GroupedMessages> willChangedGroups = new ArrayList<>();
@@ -49,9 +55,10 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     private boolean reversePositions;
 
-    public ChatListItemAnimator(ChatActivity activity, RecyclerListView listView) {
+    public ChatListItemAnimator(ChatActivity activity, RecyclerListView listView, ViewGroupOverlay animationOverlay) {
         this.activity = activity;
         this.recyclerListView = listView;
+        this.overlay = animationOverlay;
         translationInterpolator = CubicBezierInterpolator.DEFAULT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             listView.getElevation();
@@ -60,6 +67,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public void runPendingAnimations() {
+        Log.d(TAG, "runPendingAnimations()");
         boolean removalsPending = !mPendingRemovals.isEmpty();
         boolean movesPending = !mPendingMoves.isEmpty();
         boolean changesPending = !mPendingChanges.isEmpty();
@@ -107,6 +115,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     long alphaEnterDelay;
 
     private void runAlphaEnterTransition() {
+        Log.d(TAG, "runAlphaEnterTransition()");
         boolean removalsPending = !mPendingRemovals.isEmpty();
         boolean movesPending = !mPendingMoves.isEmpty();
         boolean changesPending = !mPendingChanges.isEmpty();
@@ -182,6 +191,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     private void runMessageEnterTransition() {
+        Log.d(TAG, "runMessageEnterTransition()");
         boolean removalsPending = !mPendingRemovals.isEmpty();
         boolean movesPending = !mPendingMoves.isEmpty();
         boolean changesPending = !mPendingChanges.isEmpty();
@@ -229,8 +239,10 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         }
     }
 
+    // 1
     @Override
     public boolean animateAppearance(@NonNull RecyclerView.ViewHolder viewHolder, @Nullable ItemHolderInfo preLayoutInfo, @NonNull ItemHolderInfo postLayoutInfo) {
+        Log.d(TAG, "animateAppearance() " + viewHolder.getAdapterPosition());
         boolean res = super.animateAppearance(viewHolder, preLayoutInfo, postLayoutInfo);
         if (res && shouldAnimateEnterFromBottom) {
             boolean runTranslationFromBottom = false;
@@ -248,39 +260,66 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             }
 
             for (int i = 0; i < mPendingAdditions.size(); i++) {
-                mPendingAdditions.get(i).itemView.setTranslationY(addedItemsHeight);
+                View child = ((BaseCell)mPendingAdditions.get(i).itemView).cellDrawingView;
+//                View child = mPendingAdditions.get(i).itemView;
+                child.setTranslationY(-addedItemsHeight);
+                child.setTranslationX(-addedItemsHeight * 2);
+//                mPendingAdditions.get(i).itemView.setTranslationY(-addedItemsHeight);
+//                mPendingAdditions.get(i).itemView.setTranslationX(-addedItemsHeight * 2);
             }
         }
         return res;
     }
 
+    // 2
     @Override
     public boolean animateAdd(RecyclerView.ViewHolder holder) {
+        Log.d(TAG, "animateAdd() " + holder.getAdapterPosition());
         resetAnimation(holder);
-        holder.itemView.setAlpha(0);
+        final View view = holder.itemView;
+        View child = view;
+        if (view instanceof BaseCell){
+            child = ((BaseCell)view).cellDrawingView;
+            overlay.add(child);
+        }
+
+        child.setAlpha(0);
         if (!shouldAnimateEnterFromBottom) {
-            holder.itemView.setScaleX(0.9f);
-            holder.itemView.setScaleY(0.9f);
+            child.setScaleX(0.9f);
+            child.setScaleY(0.9f);
         } else {
-            if (holder.itemView instanceof ChatMessageCell) {
-                ((ChatMessageCell) holder.itemView).getTransitionParams().messageEntering = true;
+            if (view instanceof ChatMessageCell) {
+                ((ChatMessageCell) view).getTransitionParams().messageEntering = true;
             }
         }
         mPendingAdditions.add(holder);
         return true;
     }
 
+    // 3
     public void animateAddImpl(final RecyclerView.ViewHolder holder, int addedItemsHeight) {
         final View view = holder.itemView;
-        final ViewPropertyAnimator animation = view.animate();
+        final BaseCell cell;
+        View child;
+        if (view instanceof BaseCell) {
+            cell = (BaseCell) view;
+            child = cell.cellDrawingView;
+        }
+        else {
+            child = view;
+            cell = null;
+        }
+        Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition() + " " + view.getWidth() + " " + view.getHeight());
+        final ViewPropertyAnimator animation = child.animate();
         mAddAnimations.add(holder);
-        view.setTranslationY(addedItemsHeight);
-        holder.itemView.setScaleX(1);
-        holder.itemView.setScaleY(1);
+        child.setTranslationY(addedItemsHeight);
+        child.setScaleX(1);
+        child.setScaleY(1);
+        child.setAlpha(1);
         if (!(holder.itemView instanceof ChatMessageCell && ((ChatMessageCell) holder.itemView).getTransitionParams().ignoreAlpha)) {
             holder.itemView.setAlpha(1);
         }
-        animation.translationY(0).setDuration(getMoveDuration())
+        animation.translationY(0).translationX(0).setDuration(getMoveDuration() + 900)
                 .setInterpolator(translationInterpolator)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
@@ -290,7 +329,10 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                     @Override
                     public void onAnimationCancel(Animator animator) {
-                        view.setTranslationY(0);
+                        overlay.clear();
+                        cell.restoreContainer();
+                        child.setTranslationY(0);
+                        child.setTranslationX(0);
                         if (view instanceof ChatMessageCell) {
                             ((ChatMessageCell) view).getTransitionParams().messageEntering = false;
                         }
@@ -298,6 +340,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                     @Override
                     public void onAnimationEnd(Animator animator) {
+                        overlay.clear();
+                        cell.restoreContainer();
                         if (view instanceof ChatMessageCell) {
                             ((ChatMessageCell) view).getTransitionParams().messageEntering = false;
                         }
@@ -352,6 +396,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public boolean animateMove(RecyclerView.ViewHolder holder, ItemHolderInfo info, int fromX, int fromY, int toX, int toY) {
+//        Log.d(TAG, "animateMove() " + holder.getAdapterPosition());
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("animate move");
         }
@@ -609,6 +654,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     protected void animateMoveImpl(RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
+//        Log.d(TAG, "animateMoveImpl()");
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("animate move impl");
         }
@@ -945,6 +991,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     @NonNull
     @Override
     public ItemHolderInfo recordPreLayoutInformation(@NonNull RecyclerView.State state, @NonNull RecyclerView.ViewHolder viewHolder, int changeFlags, @NonNull List<Object> payloads) {
+//        Log.d(TAG, "recordPreLayoutInformation()");
         ItemHolderInfo info = super.recordPreLayoutInformation(state, viewHolder, changeFlags, payloads);
         if (viewHolder.itemView instanceof ChatMessageCell) {
             ChatMessageCell chatMessageCell = (ChatMessageCell) viewHolder.itemView;
@@ -1181,6 +1228,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public void animateAddImpl(RecyclerView.ViewHolder holder) {
+        Log.d(TAG, "animateAddImpl(1) " + holder.getAdapterPosition());
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("animate add impl");
         }
