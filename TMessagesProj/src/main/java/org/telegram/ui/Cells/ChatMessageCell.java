@@ -9694,7 +9694,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     @SuppressLint("WrongCall")
     @Override
     protected void onCellDraw(Canvas canvas) {
-        Log.d(LTAG, "onCellDraw() " + this);
+//        Log.d(LTAG, "onCellDraw() " + this);
 
         if (currentMessageObject == null) {
             return;

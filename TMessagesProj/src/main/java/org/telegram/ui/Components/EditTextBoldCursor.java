@@ -30,11 +30,13 @@ import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
+import android.text.Editable;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.Menu;
@@ -44,6 +46,8 @@ import android.view.ViewTreeObserver;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
@@ -99,6 +103,7 @@ public class EditTextBoldCursor extends EditText {
     private int headerHintColor;
     private boolean hintVisible = true;
     private float hintAlpha = 1.0f;
+    private boolean isHintShowingPrevious = true; // else = hiding
     private long lastUpdateTime;
     private boolean allowDrawCursor = true;
     private float cursorWidth = 2.0f;
@@ -524,77 +529,9 @@ public class EditTextBoldCursor extends EditText {
             }
         }
         canvas.restore();
-        if ((length() == 0 || transformHintToHeader) && hintLayout != null && (hintVisible || hintAlpha != 0)) {
-            if (hintVisible && hintAlpha != 1.0f || !hintVisible && hintAlpha != 0.0f) {
-                long newTime = System.currentTimeMillis();
-                long dt = newTime - lastUpdateTime;
-                if (dt < 0 || dt > 17) {
-                    dt = 17;
-                }
-                lastUpdateTime = newTime;
-                if (hintVisible) {
-                    hintAlpha += dt / 150.0f;
-                    if (hintAlpha > 1.0f) {
-                        hintAlpha = 1.0f;
-                    }
-                } else {
-                    hintAlpha -= dt / 150.0f;
-                    if (hintAlpha < 0.0f) {
-                        hintAlpha = 0.0f;
-                    }
-                }
-                invalidate();
-            }
-            int oldColor = getPaint().getColor();
 
-            canvas.save();
-            int left = 0;
-            float lineLeft = hintLayout.getLineLeft(0);
-            float hintWidth = hintLayout.getLineWidth(0);
-            if (lineLeft != 0) {
-                left -= lineLeft;
-            }
-            if (supportRtlHint && LocaleController.isRTL) {
-                float offset = getMeasuredWidth() - hintWidth;
-                canvas.translate(left + getScrollX() + offset, lineY - hintLayout.getHeight() - AndroidUtilities.dp(6));
-            } else {
-                canvas.translate(left + getScrollX(), lineY - hintLayout.getHeight() - AndroidUtilities.dp(6));
-            }
-            if (transformHintToHeader) {
-                float scale = 1.0f - 0.3f * headerAnimationProgress;
-                float translation = -AndroidUtilities.dp(22) * headerAnimationProgress;
-                int rF = Color.red(headerHintColor);
-                int gF = Color.green(headerHintColor);
-                int bF = Color.blue(headerHintColor);
-                int aF = Color.alpha(headerHintColor);
-                int rS = Color.red(hintColor);
-                int gS = Color.green(hintColor);
-                int bS = Color.blue(hintColor);
-                int aS = Color.alpha(hintColor);
+        drawHint(canvas);
 
-                if (supportRtlHint && LocaleController.isRTL) {
-                    canvas.translate((hintWidth + lineLeft) - (hintWidth + lineLeft) * scale, 0);
-                } else if (lineLeft != 0) {
-                    canvas.translate(lineLeft * (1.0f - scale), 0);
-                }
-                canvas.scale(scale, scale);
-                canvas.translate(0, translation);
-                getPaint().setColor(Color.argb((int) (aS + (aF - aS) * headerAnimationProgress), (int) (rS + (rF - rS) * headerAnimationProgress), (int) (gS + (gF - gS) * headerAnimationProgress), (int) (bS + (bF - bS) * headerAnimationProgress)));
-            } else {
-                getPaint().setColor(hintColor);
-                getPaint().setAlpha((int) (255 * hintAlpha * (Color.alpha(hintColor) / 255.0f)));
-            }
-            if (hintAnimator != null && hintAnimator.animateTextChange) {
-                canvas.save();
-                canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                hintAnimator.draw(canvas, getPaint());
-                canvas.restore();
-            } else {
-                hintLayout.draw(canvas);
-            }
-            getPaint().setColor(oldColor);
-            canvas.restore();
-        }
         try {
             boolean showCursor;
             if (mShowCursorField != null) {
@@ -658,6 +595,93 @@ public class EditTextBoldCursor extends EditText {
             errorLayout.draw(canvas);
             canvas.restore();
         }*/
+    }
+
+    private void drawHint(Canvas canvas) {
+        if (hintLayout == null) return;
+
+        boolean isHintShowing = hintVisible && (length() == 0);
+        if (isHintShowing != isHintShowingPrevious) {
+            // Don't change value if it is between 0-1 - for smooth fade in-out animation
+            if (hintAlpha == 0.0f || hintAlpha == 1.0f) {
+                hintAlpha = isHintShowing ? 0.0f : 1.0f;
+            }
+            isHintShowingPrevious = isHintShowing;
+        }
+
+        if (transformHintToHeader || (isHintShowing || hintAlpha != 0.0f)) {
+            int oldColor = getPaint().getColor();
+            canvas.save();
+            int left = 0;
+            float lineLeft = hintLayout.getLineLeft(0);
+            float hintWidth = hintLayout.getLineWidth(0);
+            if (lineLeft != 0) {
+                left -= lineLeft;
+            }
+            if (supportRtlHint && LocaleController.isRTL) {
+                float offset = getMeasuredWidth() - hintWidth;
+                canvas.translate(left + getScrollX() + offset, lineY - hintLayout.getHeight() - AndroidUtilities.dp(6));
+            } else {
+                canvas.translate(left + getScrollX(), lineY - hintLayout.getHeight() - AndroidUtilities.dp(6));
+            }
+            if (transformHintToHeader) {
+                float scale = 1.0f - 0.3f * headerAnimationProgress;
+                float translation = -AndroidUtilities.dp(22) * headerAnimationProgress;
+                int rF = Color.red(headerHintColor);
+                int gF = Color.green(headerHintColor);
+                int bF = Color.blue(headerHintColor);
+                int aF = Color.alpha(headerHintColor);
+                int rS = Color.red(hintColor);
+                int gS = Color.green(hintColor);
+                int bS = Color.blue(hintColor);
+                int aS = Color.alpha(hintColor);
+
+                if (supportRtlHint && LocaleController.isRTL) {
+                    canvas.translate((hintWidth + lineLeft) - (hintWidth + lineLeft) * scale, 0);
+                } else if (lineLeft != 0) {
+                    canvas.translate(lineLeft * (1.0f - scale), 0);
+                }
+                canvas.scale(scale, scale);
+                canvas.translate(0, translation);
+                getPaint().setColor(Color.argb((int) (aS + (aF - aS) * headerAnimationProgress), (int) (rS + (rF - rS) * headerAnimationProgress), (int) (gS + (gF - gS) * headerAnimationProgress), (int) (bS + (bF - bS) * headerAnimationProgress)));
+            } else {
+                if (isHintShowing && hintAlpha != 1.0f || !isHintShowing && hintAlpha != 0.0f) {
+                    long newTime = System.currentTimeMillis();
+                    long dt = newTime - lastUpdateTime;
+                    if (dt < 0 || dt > 17) {
+                        dt = 17;
+                    }
+                    lastUpdateTime = newTime;
+                    if (isHintShowing) {
+                        hintAlpha += dt / 150.0f;
+                        if (hintAlpha > 1.0f) {
+                            hintAlpha = 1.0f;
+                        }
+                    } else {
+                        hintAlpha -= dt / 150.0f;
+                        if (hintAlpha < 0.0f) {
+                            hintAlpha = 0.0f;
+                        }
+                    }
+                    invalidate();
+                }
+
+                getPaint().setColor(hintColor);
+                getPaint().setAlpha((int) (255 * hintAlpha * (Color.alpha(hintColor) / 255.0f)));
+            }
+
+            if (hintAnimator != null && hintAnimator.animateTextChange) {
+                canvas.save();
+                canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                hintAnimator.draw(canvas, getPaint());
+                canvas.restore();
+            } else {
+                hintLayout.draw(canvas);
+            }
+
+            getPaint().setColor(oldColor);
+            canvas.restore();
+        }
     }
 
     public void setWindowView(View view) {
