@@ -287,7 +287,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
     };
 
-    protected EditTextCaption messageEditText;
+    /*protected*/ public EditTextCaption messageEditText;
     private SimpleTextView slowModeButton;
     private int slowModeTimer;
     private Runnable updateSlowModeRunnable;

@@ -4425,8 +4425,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         contentView.addView(chatListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
 //        AndroidUtilities.disableParentsClip(chatListView);
-        chatListView.setBackgroundColor(Color.BLACK);
-        contentView.setBackgroundColor(Color.RED);
+//        chatListView.setBackgroundColor(Color.BLACK);
 
         chatListView.setOnItemLongClickListener(onItemLongClickListener);
         chatListView.setOnItemClickListener(onItemClickListener);
@@ -6297,6 +6296,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatActivityEnterView.setVisibility(View.INVISIBLE);
         }
         contentView.addView(chatActivityEnterView, contentView.getChildCount() - 1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
+        chatListItemAnimator.setChatActivityEnterView(chatActivityEnterView);
 
         chatActivityEnterTopView = new ChatActivityEnterTopView(context) {
             @Override

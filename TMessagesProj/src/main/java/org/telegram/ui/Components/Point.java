@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import androidx.annotation.NonNull;
+
 public class Point {
     public float x;
     public float y;
@@ -19,5 +21,28 @@ public class Point {
     public Point(float x, float y) {
         this.x = x;
         this.y = y;
+    }
+
+    public Point add(int x, int y) {
+        return new Point(this.x + x, this.y + y);
+    }
+
+    public void addToSelf(int x, int y) {
+        this.x += x;
+        this.y += y;
+    }
+
+    public Point subtract(Point p2) {
+        return new Point(x - p2.x, y - p2.y);
+    }
+
+    public Point subtract(int x, int y) {
+        return new Point(this.x - x, this.y - y);
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "TGPoint(" + x + "," + y + ")";
     }
 }

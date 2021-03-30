@@ -3684,6 +3684,10 @@ public class AndroidUtilities {
         }
     }
 
+    //
+    //
+    //
+
     // FIXME
     public static void disableParentsClip(@NonNull View view) {
         ViewGroup viewGroup;
@@ -3715,5 +3719,21 @@ public class AndroidUtilities {
             viewGroup.setClipToPadding(true);
             view = viewGroup;
         }
+    }
+
+    //
+
+    private static final int[] cachedLocationOnScreen = new int[2];
+
+    // TODO optimize usage if needed (avoid point allocations)
+    public static org.telegram.ui.Components.Point getLocationOnScreen(View view) {
+        int[] cached = getLocationOnScreenCached(view);
+        return new org.telegram.ui.Components.Point(cached[0], cached[1]);
+    }
+
+    private static int[] getLocationOnScreenCached(View view) {
+        // TODO ensure main thread
+        view.getLocationOnScreen(cachedLocationOnScreen);
+        return cachedLocationOnScreen;
     }
 }

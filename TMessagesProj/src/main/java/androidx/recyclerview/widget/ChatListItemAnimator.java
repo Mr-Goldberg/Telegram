@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -24,8 +25,11 @@ import org.telegram.ui.Cells.BaseCell;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.ChatGreetingsView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EditTextCaption;
+import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -40,6 +44,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     private final ChatActivity activity;
     private final RecyclerListView recyclerListView;
     private final ViewGroupOverlay overlay;
+    private ChatActivityEnterView chatActivityEnterView;
+    private EditTextCaption messageEditText;
 
     private HashMap<Integer, MessageObject.GroupedMessages> willRemovedGroup = new HashMap<>();
     private ArrayList<MessageObject.GroupedMessages> willChangedGroups = new ArrayList<>();
@@ -63,6 +69,11 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             listView.getElevation();
         }
+    }
+
+    public void setChatActivityEnterView(ChatActivityEnterView chatActivityEnterView) {
+        this.chatActivityEnterView=chatActivityEnterView;
+        this.messageEditText = chatActivityEnterView.messageEditText;
     }
 
     @Override
@@ -243,7 +254,10 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     @Override
     public boolean animateAppearance(@NonNull RecyclerView.ViewHolder viewHolder, @Nullable ItemHolderInfo preLayoutInfo, @NonNull ItemHolderInfo postLayoutInfo) {
         Log.d(TAG, "animateAppearance() " + viewHolder.getAdapterPosition());
+
+        // Calls animateAdd() internally
         boolean res = super.animateAppearance(viewHolder, preLayoutInfo, postLayoutInfo);
+
         if (res && shouldAnimateEnterFromBottom) {
             boolean runTranslationFromBottom = false;
             for (int i = 0; i < mPendingAdditions.size(); i++) {
@@ -259,13 +273,22 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
             }
 
+//            final Point inputTextLocation = AndroidUtilities.getLocationOnScreen(messageEditText);
             for (int i = 0; i < mPendingAdditions.size(); i++) {
-                View child = ((BaseCell)mPendingAdditions.get(i).itemView).cellDrawingView;
-//                View child = mPendingAdditions.get(i).itemView;
-                child.setTranslationY(-addedItemsHeight);
-                child.setTranslationX(-addedItemsHeight * 2);
-//                mPendingAdditions.get(i).itemView.setTranslationY(-addedItemsHeight);
-//                mPendingAdditions.get(i).itemView.setTranslationX(-addedItemsHeight * 2);
+                View view = mPendingAdditions.get(i).itemView;
+                if (view instanceof ChatMessageCell) {
+//                    View child = ((BaseCell) view).cellDrawingView;
+//                    ChatMessageCell cell = (ChatMessageCell) view;
+//                    Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
+//                    Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
+//                    Point diff = cellTextLocation.subtract(inputTextLocation);
+//                    Log.d(TAG, "animateAppearance() diff " + cellLocation + " " + cell.textX + " " + cell.textY + " = " + diff);
+//                    child.setTranslationX(diff.x);
+//                    child.setTranslationY(diff.y);
+                }
+                else {
+                    view.setTranslationY(-addedItemsHeight);
+                }
             }
         }
         return res;
@@ -278,13 +301,15 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         resetAnimation(holder);
         final View view = holder.itemView;
         View child = view;
-        if (view instanceof BaseCell){
+        if (view instanceof ChatMessageCell) {
+            ChatMessageCell cell = (ChatMessageCell) view;
             child = ((BaseCell)view).cellDrawingView;
             overlay.add(child);
         }
 
         child.setAlpha(0);
         if (!shouldAnimateEnterFromBottom) {
+            Log.d(TAG, "animateAdd() !shouldAnimateEnterFromBottom");
             child.setScaleX(0.9f);
             child.setScaleY(0.9f);
         } else {
@@ -298,28 +323,43 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     // 3
     public void animateAddImpl(final RecyclerView.ViewHolder holder, int addedItemsHeight) {
+        final long animationDuration = getMoveDuration() + 900;
         final View view = holder.itemView;
-        final BaseCell cell;
+        Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition() + " " + view.getWidth() + " " + view.getHeight());
+        final ChatMessageCell cell;
         View child;
-        if (view instanceof BaseCell) {
-            cell = (BaseCell) view;
+
+        if (view instanceof ChatMessageCell) {
+
+            cell = (ChatMessageCell) view;
+            cell.backgroundDrawableAnimation.start(animationDuration);
+//            cell.setHighlightedAnimated();
+
             child = cell.cellDrawingView;
-        }
-        else {
+
+            // FIXME move to animateAdd(), however, textX is not calculated at that point (calculation is in onDraw())
+            final Point inputTextLocation = AndroidUtilities.getLocationOnScreen(messageEditText);
+            inputTextLocation.y += messageEditText.getPaddingTop();
+            Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
+            Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
+            Point diff = inputTextLocation.subtract(cellTextLocation);
+            child.setTranslationX(diff.x);
+            child.setTranslationY(diff.y);
+
+        } else {
             child = view;
             cell = null;
         }
-        Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition() + " " + view.getWidth() + " " + view.getHeight());
+
         final ViewPropertyAnimator animation = child.animate();
         mAddAnimations.add(holder);
-        child.setTranslationY(addedItemsHeight);
         child.setScaleX(1);
         child.setScaleY(1);
         child.setAlpha(1);
         if (!(holder.itemView instanceof ChatMessageCell && ((ChatMessageCell) holder.itemView).getTransitionParams().ignoreAlpha)) {
             holder.itemView.setAlpha(1);
         }
-        animation.translationY(0).translationX(0).setDuration(getMoveDuration() + 900)
+        animation.translationY(0).translationX(0).setDuration(animationDuration)
                 .setInterpolator(translationInterpolator)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
@@ -331,6 +371,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     public void onAnimationCancel(Animator animator) {
                         overlay.clear();
                         cell.restoreContainer();
+                        cell.backgroundDrawableAnimation.finish();
                         child.setTranslationY(0);
                         child.setTranslationX(0);
                         if (view instanceof ChatMessageCell) {

@@ -309,9 +309,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private MessageObject.GroupedMessagePosition currentPosition;
     private boolean groupPhotoInvisible;
 
-    private int textX;
+    // TODO calculate on in onDraw() but earlier (onLayout?)
+    /*private*/ public int textX;
     private int unmovedTextX;
-    private int textY;
+    /*private*/ public int textY;
     private int totalHeight;
     private int additionalTimeOffsetY;
     private int keyboardHeight;
@@ -776,6 +777,37 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     };
     private SparseArray<Rect> accessibilityVirtualViewBounds = new SparseArray<>();
     private int currentFocusedVirtualView = -1;
+
+    public class BackgroundDrawableAnimation {
+        private long duration = 200;
+        private long startTime = 0;
+
+        public void start(long duration) {
+            this.duration = duration;
+            startTime = System.currentTimeMillis();
+            invalidate();
+        }
+
+        public void finish() {
+            startTime = 0;
+            invalidate();
+        }
+
+        private void drawFrame(Canvas canvas) {
+            long progress = System.currentTimeMillis() - startTime;
+            currentSelectedBackgroundAlpha = 0;
+            if (progress < duration) {
+                float percent = (float) progress / duration;
+                currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal * percent));
+                currentBackgroundDrawable.draw(canvas);
+                invalidate();
+            } else {
+                currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
+                currentBackgroundDrawable.draw(canvas);
+            }
+        }
+    }
+    public BackgroundDrawableAnimation backgroundDrawableAnimation = new BackgroundDrawableAnimation();
 
     public ChatMessageCell(Context context) {
         super(context);
@@ -6982,6 +7014,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         boolean imageDrawn = false;
         radialProgress.setCircleCrossfadeColor(null, 0.0f, 1.0f);
+        // Draw text
         if (currentMessageObject.type == 0) {
             if (currentMessageObject.isOutOwner()) {
                 textX = getCurrentBackgroundLeft() + AndroidUtilities.dp(11) + getExtraTextX();
@@ -9725,7 +9758,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
 
-        canvas.drawRoundRect(1,1,getWidth()-2,getHeight()-2, 8,8,myPaint);
+//        canvas.drawRoundRect(1,1,getWidth()-2,getHeight()-2, 8,8,myPaint);
 //        if(true)return;
 
 
@@ -9942,7 +9975,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         // Draw message bubble
-        if (drawBackground && currentBackgroundDrawable != null && (currentPosition == null || isDrawSelectionBackground() && (currentMessageObject.isMusic() || currentMessageObject.isDocument()))) {
+        if (/*false &&*/ drawBackground && currentBackgroundDrawable != null && (currentPosition == null || isDrawSelectionBackground() && (currentMessageObject.isMusic() || currentMessageObject.isDocument()))) {
             if (isHighlightedAnimated) {
                 currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
                 currentBackgroundDrawable.draw(canvas);
@@ -9973,9 +10006,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         canvas.restore();
                     }
                 } else {
-                    currentSelectedBackgroundAlpha = 0;
-                    currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
-                    currentBackgroundDrawable.draw(canvas);
+                    // Draw simple bubble here
+                    backgroundDrawableAnimation.drawFrame(canvas);
+//                    currentSelectedBackgroundAlpha = 0;
+//                    currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
+//                    currentBackgroundDrawable.draw(canvas);
                 }
             }
             if (currentBackgroundShadowDrawable != null && currentPosition == null) {
