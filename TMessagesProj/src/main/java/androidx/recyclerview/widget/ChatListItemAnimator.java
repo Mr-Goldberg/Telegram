@@ -251,6 +251,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     // 1
+    // https://developer.android.com/reference/androidx/recyclerview/widget/SimpleItemAnimator#animateAppearance(androidx.recyclerview.widget.RecyclerView.ViewHolder,%20androidx.recyclerview.widget.RecyclerView.ItemAnimator.ItemHolderInfo,%20androidx.recyclerview.widget.RecyclerView.ItemAnimator.ItemHolderInfo)
+    // It might be newly added to the adapter or simply become visible due to other factors.
     @Override
     public boolean animateAppearance(@NonNull RecyclerView.ViewHolder viewHolder, @Nullable ItemHolderInfo preLayoutInfo, @NonNull ItemHolderInfo postLayoutInfo) {
         Log.d(TAG, "animateAppearance() " + viewHolder.getAdapterPosition());
@@ -283,7 +285,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 //                    Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
 //                    Point diff = cellTextLocation.subtract(inputTextLocation);
 //                    Log.d(TAG, "animateAppearance() diff " + cellLocation + " " + cell.textX + " " + cell.textY + " = " + diff);
-//                    child.setTranslationX(diff.x);
 //                    child.setTranslationY(diff.y);
                 }
                 else {
@@ -295,6 +296,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     // 2
+    // Called when an item is added to the RecyclerView
     @Override
     public boolean animateAdd(RecyclerView.ViewHolder holder) {
         Log.d(TAG, "animateAdd() " + holder.getAdapterPosition());
@@ -303,7 +305,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         View child = view;
         if (view instanceof ChatMessageCell) {
             ChatMessageCell cell = (ChatMessageCell) view;
-            child = ((BaseCell)view).cellDrawingView;
+            child = ((BaseCell) view).cellDrawingView;
             overlay.add(child);
         }
 
@@ -332,8 +334,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         if (view instanceof ChatMessageCell) {
 
             cell = (ChatMessageCell) view;
-            cell.backgroundDrawableAnimation.start(animationDuration);
-//            cell.setHighlightedAnimated();
 
             child = cell.cellDrawingView;
 
@@ -343,12 +343,13 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
             Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
             Point diff = inputTextLocation.subtract(cellTextLocation);
-            child.setTranslationX(diff.x);
             child.setTranslationY(diff.y);
+
+            cell.backgroundDrawableAnimation.start(animationDuration, -diff.x);
 
         } else {
             child = view;
-            cell = null;
+            cell = null; // FIXME
         }
 
         final ViewPropertyAnimator animation = child.animate();
@@ -359,7 +360,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         if (!(holder.itemView instanceof ChatMessageCell && ((ChatMessageCell) holder.itemView).getTransitionParams().ignoreAlpha)) {
             holder.itemView.setAlpha(1);
         }
-        animation.translationY(0).translationX(0).setDuration(animationDuration)
+        animation.translationY(0).setDuration(animationDuration)
                 .setInterpolator(translationInterpolator)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
@@ -373,7 +374,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                         cell.restoreContainer();
                         cell.backgroundDrawableAnimation.finish();
                         child.setTranslationY(0);
-                        child.setTranslationX(0);
                         if (view instanceof ChatMessageCell) {
                             ((ChatMessageCell) view).getTransitionParams().messageEntering = false;
                         }
@@ -437,7 +437,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public boolean animateMove(RecyclerView.ViewHolder holder, ItemHolderInfo info, int fromX, int fromY, int toX, int toY) {
-//        Log.d(TAG, "animateMove() " + holder.getAdapterPosition());
+//        Log.d(TAG, "animateMove() " + holder.getAdapterPosition() + " " + fromX + "->" + toX + " " + fromY+"->"+toY);
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("animate move");
         }
@@ -916,13 +916,17 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     @Override
     public boolean animateChange(RecyclerView.ViewHolder oldHolder, RecyclerView.ViewHolder newHolder, ItemHolderInfo info,
                                  int fromX, int fromY, int toX, int toY) {
+        Log.d(TAG, "animateChange() " + oldHolder.getAdapterPosition() + "->" +newHolder.getAdapterPosition()+ " " + fromX + "->" + toX + " " + fromY+"->"+toY);
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("animate change");
         }
         if (oldHolder == newHolder) {
             // Don't know how to run change animations when the same view holder is re-used.
             // run a move animation to handle position changes.
-            return animateMove(oldHolder, info, fromX, fromY, toX, toY);
+
+            // FIXME check if something is broken
+            //return animateMove(oldHolder, info, fromX, fromY, toX, toY);
+            return false;
         }
         final float prevTranslationX;
         if (oldHolder.itemView instanceof ChatMessageCell) {

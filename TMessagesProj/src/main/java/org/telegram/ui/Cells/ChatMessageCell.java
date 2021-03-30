@@ -781,30 +781,43 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public class BackgroundDrawableAnimation {
         private long duration = 200;
         private long startTime = 0;
+        private float leftDiff = 0;
+        private int targetLeft = 0;
 
-        public void start(long duration) {
+        public void start(long duration, float diffX) {
             this.duration = duration;
             startTime = System.currentTimeMillis();
+            Rect bounds = currentBackgroundDrawable.getBounds();
+            targetLeft = bounds.left;
+            leftDiff = diffX;
+            bounds.left -= diffX;
             invalidate();
         }
 
         public void finish() {
             startTime = 0;
+            leftDiff = 0;
+            currentBackgroundDrawable.getBounds().left = targetLeft;
             invalidate();
         }
 
         private void drawFrame(Canvas canvas) {
-            long progress = System.currentTimeMillis() - startTime;
-            currentSelectedBackgroundAlpha = 0;
-            if (progress < duration) {
-                float percent = (float) progress / duration;
-                currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal * percent));
-                currentBackgroundDrawable.draw(canvas);
-                invalidate();
-            } else {
-                currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
-                currentBackgroundDrawable.draw(canvas);
+            float percent = 1.0f;
+            if (startTime != 0) {
+                long progress = System.currentTimeMillis() - startTime;
+                if (progress < duration) {
+                    percent = (float) progress / duration;
+                }
             }
+
+            currentSelectedBackgroundAlpha = 0;
+            if (leftDiff != 0) {
+                currentBackgroundDrawable.getBounds().left = targetLeft - (int) ((1.0f - percent) * leftDiff);
+            }
+            currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal * percent));
+            currentBackgroundDrawable.draw(canvas);
+
+            if (percent != 1.0f) invalidate();
         }
     }
     public BackgroundDrawableAnimation backgroundDrawableAnimation = new BackgroundDrawableAnimation();
@@ -7876,7 +7889,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (textLayoutBlocks == null || textLayoutBlocks.isEmpty()) {
             return;
         }
-        int oldAlpha = 0;
         int firstVisibleBlockNum;
         int lastVisibleBlockNum;
         if (origin) {
@@ -9681,7 +9693,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
-
     public void setDrawableBoundsInner(Drawable drawable, int x, int y, int w, int h) {
         if (drawable != null) {
             drawable.setBounds(x + transitionParams.deltaLeft, y + transitionParams.deltaTop, x + w + transitionParams.deltaRight, y + h + transitionParams.deltaBottom);
@@ -9694,7 +9705,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     @SuppressLint("WrongCall")
     @Override
     protected void onCellDraw(Canvas canvas) {
-//        Log.d(LTAG, "onCellDraw() " + this);
+//        Log.d(LTAG, "onCellDraw() " + transitionParams.deltaLeft);
 
         if (currentMessageObject == null) {
             return;
@@ -10061,7 +10072,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         if (isHighlightedAnimated) {
-            Log.d(LTAG, "onDraw() isHighlightedAnimated" + this);
             long newTime = System.currentTimeMillis();
             long dt = Math.abs(newTime - lastHighlightProgressTime);
             if (dt > 17) {
