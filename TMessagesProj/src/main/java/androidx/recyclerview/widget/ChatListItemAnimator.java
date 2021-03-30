@@ -330,7 +330,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition() + " " + view.getWidth() + " " + view.getHeight());
         final ChatMessageCell cell;
         View child;
-
         if (view instanceof ChatMessageCell) {
 
             cell = (ChatMessageCell) view;
@@ -345,6 +344,13 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             Point diff = inputTextLocation.subtract(cellTextLocation);
             child.setTranslationY(diff.y);
 
+            // TODO scale text only
+            // TODO determine scale from text sizes
+            child.setPivotX(inputTextLocation.x); // Assuming cell is screen-wide
+            child.setPivotY(cell.textY);
+            child.setScaleX(1.1f);
+            child.setScaleY(1.1f);
+
             cell.backgroundDrawableAnimation.start(animationDuration, -diff.x);
 
         } else {
@@ -354,17 +360,16 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
         final ViewPropertyAnimator animation = child.animate();
         mAddAnimations.add(holder);
-        child.setScaleX(1);
-        child.setScaleY(1);
         child.setAlpha(1);
         if (!(holder.itemView instanceof ChatMessageCell && ((ChatMessageCell) holder.itemView).getTransitionParams().ignoreAlpha)) {
             holder.itemView.setAlpha(1);
         }
-        animation.translationY(0).setDuration(animationDuration)
+        animation.translationY(0).scaleX(1).scaleY(1).setDuration(animationDuration)
                 .setInterpolator(translationInterpolator)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationStart(Animator animator) {
+                        Log.d("XXX", "onAnimationStart() " + view.getScaleY() + " " + child.getScaleY());
                         dispatchAddStarting(holder);
                     }
 
@@ -374,6 +379,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                         cell.restoreContainer();
                         cell.backgroundDrawableAnimation.finish();
                         child.setTranslationY(0);
+                        child.setScaleX(1);
+                        child.setScaleY(1);
                         if (view instanceof ChatMessageCell) {
                             ((ChatMessageCell) view).getTransitionParams().messageEntering = false;
                         }
