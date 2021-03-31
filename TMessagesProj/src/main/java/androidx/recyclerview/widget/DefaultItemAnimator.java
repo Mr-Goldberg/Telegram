@@ -484,6 +484,8 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     @Override
     public void endAnimation(RecyclerView.ViewHolder item) {
         View view = item.itemView;
+        // this will trigger end callback which should set properties to their target values.
+        view.animate().cancel();
         if (view instanceof ChatMessageCell)
         {
             BaseCell.CellDrawingView child = ((ChatMessageCell) view).cellDrawingView;
@@ -491,9 +493,6 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 child.animator.cancel();
             }
             view = child;
-        } else {
-            // this will trigger end callback which should set properties to their target values.
-            view.animate().cancel();
         }
         // TODO if some other animations are chained to end, how do we cancel them as well?
         for (int i = mPendingMoves.size() - 1; i >= 0; i--) {

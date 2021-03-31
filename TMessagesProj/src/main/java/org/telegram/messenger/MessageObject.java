@@ -64,6 +64,7 @@ public class MessageObject {
     public static final int MESSAGE_SEND_STATE_SEND_ERROR = 2;
     public static final int MESSAGE_SEND_STATE_EDITING = 3;
 
+    public static final int TYPE_TEXT = 0;
     public static final int TYPE_PHOTO = 1;
     public static final int TYPE_VIDEO = 3;
     public static final int TYPE_ROUND_VIDEO = 5;

@@ -199,13 +199,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
     }
 
+    public static final int EMOJI_SIZE = AndroidUtilities.dp(20);
+
     private final static int RECORD_STATE_ENTER = 0;
     private final static int RECORD_STATE_SENDING = 1;
     private final static int RECORD_STATE_CANCEL = 2;
     private final static int RECORD_STATE_PREPARING = 3;
     private final static int RECORD_STATE_CANCEL_BY_TIME = 4;
     private final static int RECORD_STATE_CANCEL_BY_GESTURE = 5;
-
 
     private int currentAccount = UserConfig.selectedAccount;
     private AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
@@ -1994,7 +1995,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         for (int i = 0; i < spans.length; i++) {
                             editable.removeSpan(spans[i]);
                         }
-                        Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                        Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), EMOJI_SIZE, false);
                         processChange = false;
                     }
                 }
@@ -5477,7 +5478,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         FileLog.e(e);
                     }
                 }
-                textToSetWithKeyboard = Emoji.replaceEmoji(new SpannableStringBuilder(stringBuilder), messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                textToSetWithKeyboard = Emoji.replaceEmoji(new SpannableStringBuilder(stringBuilder), messageEditText.getPaint().getFontMetricsInt(), EMOJI_SIZE, false);
             } else {
                 textToSetWithKeyboard = "";
             }
@@ -5700,7 +5701,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             SpannableStringBuilder builder = new SpannableStringBuilder(messageEditText.getText());
             builder.replace(start, start + len, text);
             if (parseEmoji) {
-                Emoji.replaceEmoji(builder, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                Emoji.replaceEmoji(builder, messageEditText.getPaint().getFontMetricsInt(), EMOJI_SIZE, false);
             }
             messageEditText.setText(builder);
             messageEditText.setSelection(start + text.length());
@@ -6100,7 +6101,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
                 try {
                     innerTextChange = 2;
-                    CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                    CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), EMOJI_SIZE, false);
                     messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                     int j = i + localCharSequence.length();
                     messageEditText.setSelection(j, j);

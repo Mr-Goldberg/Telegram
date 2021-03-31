@@ -31,6 +31,8 @@ import org.telegram.ui.Components.RecyclableDrawable;
 
 import androidx.annotation.Keep;
 
+import com.google.android.exoplayer2.util.Log;
+
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
     public interface ImageReceiverDelegate {
@@ -1501,6 +1503,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public void setImageWidth(int width) {
         imageW = width;
+    }
+
+    public void setImageHeight(int height) {
+        imageH = height;
     }
 
     public void setImageCoords(float x, float y, float width, float height) {

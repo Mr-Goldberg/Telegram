@@ -373,7 +373,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int forwardNameCenterX;
     private long lastAnimationTime;
     private long lastNamesAnimationTime;
-    private int documentAttachType;
+    public int documentAttachType;
     private TLRPC.Document documentAttach;
     private boolean drawPhotoImage;
     private boolean hasLinkPreview;
@@ -7382,7 +7382,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     photoImage.setSideClip(0);
                 }
-                imageDrawn = photoImage.draw(canvas);
+                imageDrawn = photoImage.draw(canvas); // Calls invalidate() inside
                 boolean drawTimeOld = drawTime;
                 drawTime = photoImage.getVisible();
                 if (currentPosition != null && drawTimeOld != drawTime) {
@@ -9702,10 +9702,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private static final String LTAG = "ChatMessageCell";
     private static final Paint myPaint = new Paint();
 
+    private int drawCount = 0;
+
     @SuppressLint("WrongCall")
     @Override
     protected void onCellDraw(Canvas canvas) {
-//        Log.d(LTAG, "onCellDraw() " + transitionParams.deltaLeft);
+//        Log.d(LTAG, "onCellDraw() " + drawCount + " " + this.photoImage);
+
+        ++drawCount;
+
 
         if (currentMessageObject == null) {
             return;
