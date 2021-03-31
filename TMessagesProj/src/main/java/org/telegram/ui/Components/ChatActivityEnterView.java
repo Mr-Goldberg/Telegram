@@ -86,6 +86,8 @@ import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -288,6 +290,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     };
 
     /*protected*/ public EditTextCaption messageEditText;
+    private Point messageEditTextLocationOnLastMessageSent; // Location of top-left text corner
     private SimpleTextView slowModeButton;
     private int slowModeTimer;
     private Runnable updateSlowModeRunnable;
@@ -1740,9 +1743,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 } else {
                     SendMessagesHelper.prepareSendingPhoto(accountInstance, null, inputContentInfo.getContentUri(), dialog_id, replyingMessageObject, getThreadMessage(), null, null, null, inputContentInfo, 0, null, notify, 0);
                 }
-                if (delegate != null) {
-                    delegate.onMessageSend(null, true, scheduleDate);
-                }
+                callDelegateOnMessageSend(null, true, scheduleDate);
             }
 
             @Override
@@ -3851,9 +3852,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 MediaController.getInstance().cleanupPlayer(true, true);
             }
             SendMessagesHelper.getInstance(currentAccount).sendMessage(audioToSend, null, audioToSendPath, dialog_id, replyingMessageObject, getThreadMessage(), null, null, null, null, notify, scheduleDate, 0, null);
-            if (delegate != null) {
-                delegate.onMessageSend(null, notify, scheduleDate);
-            }
+            callDelegateOnMessageSend(null, notify, scheduleDate);
             hideRecordedAudioPanel(true);
             checkSendButton(true);
             return;
@@ -3874,13 +3873,16 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (processSendingText(message, notify, scheduleDate)) {
             messageEditText.setText("");
             lastTypingTimeSend = 0;
-            if (delegate != null) {
-                delegate.onMessageSend(message, notify, scheduleDate);
-            }
+            callDelegateOnMessageSend(message, notify, scheduleDate);
         } else if (forceShowSendButton) {
-            if (delegate != null) {
-                delegate.onMessageSend(null, notify, scheduleDate);
-            }
+            callDelegateOnMessageSend(null, notify, scheduleDate);
+        }
+    }
+
+    private void callDelegateOnMessageSend(CharSequence message, boolean notify, int scheduleDate) {
+        setTextLocationOnLastMessageSent();
+        if (delegate != null) {
+            delegate.onMessageSend(message, notify, scheduleDate);
         }
     }
 
@@ -4641,6 +4643,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
             }
         }
+    }
+
+    public Point getTextLocationOnLastMessageSent() {
+        if (messageEditTextLocationOnLastMessageSent == null) {
+            setTextLocationOnLastMessageSent();
+        }
+        return messageEditTextLocationOnLastMessageSent;
+    }
+
+    private void setTextLocationOnLastMessageSent() {
+        messageEditTextLocationOnLastMessageSent = AndroidUtilities.getLocationOnScreen(messageEditText);
+        messageEditTextLocationOnLastMessageSent.y += messageEditText.getPaddingTop();
     }
 
     private void setSlowModeButtonVisible(boolean visible) {
@@ -5916,9 +5930,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
                     preferences.edit().putInt("answered_" + dialog_id, botButtonsMessageObject.getId()).commit();
                 }
-                if (delegate != null) {
-                    delegate.onMessageSend(null, true, 0);
-                }
+                callDelegateOnMessageSend(null, true, 0);
             });
             sizeNotifierLayout.addView(botKeyboardView, sizeNotifierLayout.getChildCount() - 1);
         }
@@ -6181,9 +6193,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             emojiView.hideSearchKeyboard();
                         }
                     }
-                    if (delegate != null) {
-                        delegate.onMessageSend(null, notify, scheduleDate);
-                    }
+                    callDelegateOnMessageSend(null, notify, scheduleDate);
                 }
             }
 
@@ -6400,9 +6410,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
             setStickersExpanded(false, true, false);
             SendMessagesHelper.getInstance(currentAccount).sendSticker(sticker, query, dialog_id, replyingMessageObject, getThreadMessage(), parent, notify, scheduleDate);
-            if (delegate != null) {
-                delegate.onMessageSend(null, true, scheduleDate);
-            }
+            callDelegateOnMessageSend(null, true, scheduleDate);
             if (clearsInputField) {
                 setFieldText("");
             }
@@ -7107,9 +7115,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     checkSendButton(false);
                     updateRecordIntefrace(RECORD_STATE_PREPARING);
                 } else {
-                    if (delegate != null) {
-                        delegate.onMessageSend(null, true, 0);
-                    }
+                    callDelegateOnMessageSend(null, true, 0);
                 }
             }
         } else if (id == NotificationCenter.audioRouteChanged) {

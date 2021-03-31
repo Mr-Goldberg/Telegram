@@ -3731,6 +3731,11 @@ public class AndroidUtilities {
         return new org.telegram.ui.Components.Point(cached[0], cached[1]);
     }
 
+    public static int getYOnScreen(View view) {
+        view.getLocationOnScreen(cachedLocationOnScreen);
+        return cachedLocationOnScreen[1];
+    }
+
     private static int[] getLocationOnScreenCached(View view) {
         // TODO ensure main thread
         view.getLocationOnScreen(cachedLocationOnScreen);

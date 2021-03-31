@@ -328,78 +328,110 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         final long animationDuration = getMoveDuration() + 900;
         final View view = holder.itemView;
         Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition() + " " + view.getWidth() + " " + view.getHeight());
-        final ChatMessageCell cell;
-        View child;
+        mAddAnimations.add(holder);
+
         if (view instanceof ChatMessageCell) {
 
-            cell = (ChatMessageCell) view;
+            // TODO determine scale from text sizes
+            final float scaleStart = 1.125f;
+            final float scaleDiff = 0.125f;
 
-            child = cell.cellDrawingView;
+            final ChatMessageCell cell = (ChatMessageCell) view;
+            final BaseCell.CellDrawingView child = cell.cellDrawingView;
+
+            child.setAlpha(1);
+            if (!cell.getTransitionParams().ignoreAlpha) {
+                holder.itemView.setAlpha(1);
+            }
 
             // FIXME move to animateAdd(), however, textX is not calculated at that point (calculation is in onDraw())
-            final Point inputTextLocation = AndroidUtilities.getLocationOnScreen(messageEditText);
-            inputTextLocation.y += messageEditText.getPaddingTop();
+            Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
             Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
             Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
             Point diff = inputTextLocation.subtract(cellTextLocation);
-            child.setTranslationY(diff.y);
 
-            // TODO scale text only
-            // TODO determine scale from text sizes
+            final int startY = (int) (cellLocation.y + diff.y);
+            child.setY(startY);
+
             child.setPivotX(inputTextLocation.x); // Assuming cell is screen-wide
             child.setPivotY(cell.textY);
-            child.setScaleX(1.1f);
-            child.setScaleY(1.1f);
+            child.setScaleX(scaleStart);
+            child.setScaleY(scaleStart);
+
+            ValueAnimator animation = ValueAnimator.ofFloat(0, 1).setDuration(animationDuration);
+            child.animator = animation;
+            animation.setInterpolator(translationInterpolator);
+            animation.addUpdateListener(valueAnimator -> {
+                float value = (float) valueAnimator.getAnimatedValue();
+                float scale = scaleStart - scaleDiff * value;
+                child.setScaleX(scale);
+                child.setScaleY(scale);
+                int cellY = AndroidUtilities.getYOnScreen(cell);
+                float y = startY - value * (startY - cellY);
+                child.setY(y);
+            });
+            animation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    dispatchAddStarting(holder);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) {
+                    overlay.clear();
+                    cell.restoreContainer();
+                    cell.backgroundDrawableAnimation.finish();
+                    child.setTranslationY(0);
+                    child.setScaleX(1);
+                    child.setScaleY(1);
+                    cell.getTransitionParams().messageEntering = false;
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    overlay.clear();
+                    cell.restoreContainer();
+                    cell.getTransitionParams().messageEntering = false;
+                    animation.removeListener(this);
+                    if (mAddAnimations.remove(holder)) {
+                        dispatchAddFinished(holder);
+                        dispatchFinishedWhenDone();
+                    }
+                }
+            });
 
             cell.backgroundDrawableAnimation.start(animationDuration, -diff.x);
+            animation.start();
 
-        } else {
-            child = view;
-            cell = null; // FIXME
+        } else { // ! ChatMessageCell
+
+            final ViewPropertyAnimator animation = view.animate();
+            view.setTranslationY(addedItemsHeight);
+            view.setScaleX(1);
+            view.setScaleY(1);
+            animation.translationY(0).setDuration(animationDuration)
+                    .setInterpolator(translationInterpolator)
+                    .setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animator) {
+                            dispatchAddStarting(holder);
+                        }
+
+                        @Override
+                        public void onAnimationCancel(Animator animator) {
+                            view.setTranslationY(0);
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animator animator) {
+                            animation.setListener(null);
+                            if (mAddAnimations.remove(holder)) {
+                                dispatchAddFinished(holder);
+                                dispatchFinishedWhenDone();
+                            }
+                        }
+                    }).start();
         }
-
-        final ViewPropertyAnimator animation = child.animate();
-        mAddAnimations.add(holder);
-        child.setAlpha(1);
-        if (!(holder.itemView instanceof ChatMessageCell && ((ChatMessageCell) holder.itemView).getTransitionParams().ignoreAlpha)) {
-            holder.itemView.setAlpha(1);
-        }
-        animation.translationY(0).scaleX(1).scaleY(1).setDuration(animationDuration)
-                .setInterpolator(translationInterpolator)
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationStart(Animator animator) {
-                        Log.d("XXX", "onAnimationStart() " + view.getScaleY() + " " + child.getScaleY());
-                        dispatchAddStarting(holder);
-                    }
-
-                    @Override
-                    public void onAnimationCancel(Animator animator) {
-                        overlay.clear();
-                        cell.restoreContainer();
-                        cell.backgroundDrawableAnimation.finish();
-                        child.setTranslationY(0);
-                        child.setScaleX(1);
-                        child.setScaleY(1);
-                        if (view instanceof ChatMessageCell) {
-                            ((ChatMessageCell) view).getTransitionParams().messageEntering = false;
-                        }
-                    }
-
-                    @Override
-                    public void onAnimationEnd(Animator animator) {
-                        overlay.clear();
-                        cell.restoreContainer();
-                        if (view instanceof ChatMessageCell) {
-                            ((ChatMessageCell) view).getTransitionParams().messageEntering = false;
-                        }
-                        animation.setListener(null);
-                        if (mAddAnimations.remove(holder)) {
-                            dispatchAddFinished(holder);
-                            dispatchFinishedWhenDone();
-                        }
-                    }
-                }).start();
     }
 
     @Override

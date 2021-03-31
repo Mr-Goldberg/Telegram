@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Cells;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
@@ -143,9 +144,10 @@ public abstract class BaseCell extends ViewGroup {
     protected void onCellDraw(Canvas canvas) {
     }
 
-    protected static class CellDrawingView extends View {
+    public static class CellDrawingView extends View {
 
         BaseCell cellContainer;
+        public ValueAnimator animator;
 
         CellDrawingView(Context context) {
             super(context);

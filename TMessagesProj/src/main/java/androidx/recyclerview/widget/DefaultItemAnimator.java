@@ -31,6 +31,7 @@ import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.BuildVars;
 import org.telegram.ui.Cells.BaseCell;
+import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -483,12 +484,17 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     @Override
     public void endAnimation(RecyclerView.ViewHolder item) {
         View view = item.itemView;
-        if (view instanceof BaseCell)
+        if (view instanceof ChatMessageCell)
         {
-            view = ((BaseCell) view).cellDrawingView;
+            BaseCell.CellDrawingView child = ((ChatMessageCell) view).cellDrawingView;
+            if (child.animator != null) {
+                child.animator.cancel();
+            }
+            view = child;
+        } else {
+            // this will trigger end callback which should set properties to their target values.
+            view.animate().cancel();
         }
-        // this will trigger end callback which should set properties to their target values.
-        view.animate().cancel();
         // TODO if some other animations are chained to end, how do we cancel them as well?
         for (int i = mPendingMoves.size() - 1; i >= 0; i--) {
             MoveInfo moveInfo = mPendingMoves.get(i);
