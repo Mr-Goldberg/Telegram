@@ -86,8 +86,6 @@ import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -290,8 +288,23 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
     };
 
-    /*protected*/ public EditTextCaption messageEditText;
+    //
+    // Send animation
+    //
+
+    // Text & Single emoji
+
     private Point messageEditTextLocationOnLastMessageSent; // Location of top-left text corner
+
+    // Emoji from emoji panel
+
+    public View stickerOnPanelView;
+
+    //
+    // Send animation
+    //
+
+    /*protected*/ public EditTextCaption messageEditText;
     private SimpleTextView slowModeButton;
     private int slowModeTimer;
     private Runnable updateSlowModeRunnable;
@@ -6133,6 +6146,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                     setStickersExpanded(false, true, false);
                 }
+                stickerOnPanelView = view;
                 ChatActivityEnterView.this.onStickerSelected(sticker, query, parent, false, notify, scheduleDate);
                 if ((int) dialog_id == 0 && MessageObject.isGifDocument(sticker)) {
                     accountInstance.getMessagesController().saveGif(parent, sticker);

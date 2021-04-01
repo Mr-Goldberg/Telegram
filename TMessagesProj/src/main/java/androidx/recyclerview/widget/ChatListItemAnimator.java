@@ -313,21 +313,26 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         if (view instanceof ChatMessageCell) {
             ChatMessageCell cell = (ChatMessageCell) view;
             MessageObject messageObject = cell.getMessageObject();
+            Log.d(TAG, "animateAdd() type " + messageObject.type);
             if (messageObject.type == MessageObject.TYPE_STICKER || messageObject.type == MessageObject.TYPE_ANIMATED_STICKER) {
-                TextView textView = new TextView(view.getContext());
-                textView.setPadding(messageEditText.getPaddingLeft(), messageEditText.getPaddingTop(), messageEditText.getPaddingRight(), messageEditText.getPaddingBottom());
-                textView.setPivotX(textView.getPaddingLeft());
-                textView.setPivotY(textView.getPaddingTop());
-                CharSequence emoji = Emoji.replaceEmoji(messageObject.messageText, messageEditText.getPaint().getFontMetricsInt(), ChatActivityEnterView.EMOJI_SIZE, true);
-                textView.setText(emoji);
-                textView.measure(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-                Point inputTextLocation = AndroidUtilities.getLocationOnScreen(messageEditText);
-                int x = (int) inputTextLocation.x;
-                int y = (int) inputTextLocation.y;
-                textView.layout(x, y, x + textView.getMeasuredWidth(), y + textView.getMeasuredHeight());
-                overlay.add(textView);
-                cell.getTransitionParams().emojiTextView = textView;
-                cell.getPhotoImage().setCrossfadeDuration(1);
+                if (chatActivityEnterView.stickerOnPanelView == null) {
+                    TextView textView = new TextView(view.getContext());
+                    textView.setPadding(messageEditText.getPaddingLeft(), messageEditText.getPaddingTop(), messageEditText.getPaddingRight(), messageEditText.getPaddingBottom());
+                    textView.setPivotX(textView.getPaddingLeft());
+                    textView.setPivotY(textView.getPaddingTop());
+                    CharSequence emoji = Emoji.replaceEmoji(messageObject.messageText, messageEditText.getPaint().getFontMetricsInt(), ChatActivityEnterView.EMOJI_SIZE, true);
+                    textView.setText(emoji);
+                    textView.measure(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                    Point inputTextLocation = AndroidUtilities.getLocationOnScreen(messageEditText);
+                    int x = (int) inputTextLocation.x;
+                    int y = (int) inputTextLocation.y;
+                    textView.layout(x, y, x + textView.getMeasuredWidth(), y + textView.getMeasuredHeight());
+                    cell.getTransitionParams().emojiTextView = textView;
+                    cell.getPhotoImage().setCrossfadeDuration(1);
+                    overlay.add(textView);
+                } else {
+                    overlay.add(chatActivityEnterView.stickerOnPanelView);
+                }
             }
             child = ((BaseCell) view).cellDrawingView;
             overlay.add(child);
@@ -357,11 +362,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         // TODO messageObject.isOutOwner()
 
         if (view instanceof ChatMessageCell) {
-
-            // TODO determine scale from text sizes
-            final float scaleStart = 1.125f;
-            final float scaleDiff = 0.125f;
-
             final ChatMessageCell cell = (ChatMessageCell) view;
             final BaseCell.CellDrawingView child = cell.cellDrawingView;
 
@@ -371,39 +371,139 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             }
 
             MessageObject messageObject = cell.getMessageObject();
-            Log.d(TAG, "animateAddImpl(2) " + messageObject.type + " " + messageObject.contentType + " " + messageObject.localType);
-
-            // FIXME move to animateAdd(), however, textX is not calculated at that point (calculation is in onDraw())
-            Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
-            Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
-            Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
-            final Point diff = inputTextLocation.subtract(cellTextLocation);
-
-            final int startY = (int) (cellLocation.y + diff.y);
-            child.setY(startY);
-
-            ImageReceiver image = cell.getPhotoImage();
-            final float stickerStartX = inputTextLocation.x;
-            final float stickerDiffX = cell.getPhotoImage().getImageX() - stickerStartX;
-            final float stickerStartSize = ChatActivityEnterView.EMOJI_SIZE + image.getSideClip();
-            final float stickerDiffSize = cell.getPhotoImage().getImageWidth() - stickerStartSize;
-            final float emojiStartY = cell.getTransitionParams().emojiTextView.getY();
-
+//            Log.d(TAG, "animateAddImpl(2) " + messageObject.type + " " + messageObject.contentType + " " + messageObject.localType);
+            ValueAnimator.AnimatorUpdateListener animatorUpdateListener;
             switch (messageObject.type) {
 
                 case MessageObject.TYPE_TEXT: {
+                    final Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
+                    final Point diff;
+                    final int startY;
+                    {
+                        // FIXME move to animateAdd(), however, textX is not calculated at that point (calculation is in onDraw())
+                        Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
+                        Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
+                        diff = inputTextLocation.subtract(cellTextLocation);
+                        startY = (int) (cellLocation.y + diff.y);
+                    }
+                    child.setY(startY);
+
+                    // TODO determine scale from text sizes
+                    final float scaleStart = 1.125f;
+                    final float scaleDiff = 0.125f;
                     child.setPivotX(inputTextLocation.x); // Assuming cell is screen-wide
                     child.setPivotY(cell.textY);
                     child.setScaleX(scaleStart);
                     child.setScaleY(scaleStart);
+
+                    // TODO move to animator update block
+                    cell.backgroundDrawableAnimation.start(animationDuration, -diff.x);
+
+                    animatorUpdateListener = valueAnimator -> {
+                        float value = (float) valueAnimator.getAnimatedValue();
+
+                        // TODO extract
+                        int cellY = AndroidUtilities.getYOnScreen(cell);
+                        float yDiff = value * (startY - cellY);
+                        float y = startY - value * (startY - cellY);
+                        child.setY(y);
+
+                        float scale = scaleStart - scaleDiff * value;
+                        child.setScaleX(scale);
+                        child.setScaleY(scale);
+                    };
                     break;
                 }
 
                 case MessageObject.TYPE_STICKER:
                 case MessageObject.TYPE_ANIMATED_STICKER: {
-                    image.setImageX((int) stickerStartX);
-                    image.setImageWidth((int) stickerStartSize);
-                    image.setImageHeight((int) stickerStartSize);
+                    ImageReceiver image = cell.getPhotoImage();
+                    final int startY;
+                    Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
+                    Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
+                    if (chatActivityEnterView.stickerOnPanelView == null) {
+                        // From text field
+                        Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
+                        Point diff = inputTextLocation.subtract(cellTextLocation);
+                        startY = (int) (cellLocation.y + diff.y);
+
+                        child.setY(startY);
+
+                        final float stickerStartX = inputTextLocation.x;
+                        final float stickerDiffX = cell.getPhotoImage().getImageX() - stickerStartX;
+                        final float stickerStartSize = ChatActivityEnterView.EMOJI_SIZE + image.getSideClip();
+                        final float stickerDiffSize = cell.getPhotoImage().getImageWidth() - stickerStartSize;
+                        final float emojiStartY = cell.getTransitionParams().emojiTextView.getY();
+
+                        image.setImageX((int) stickerStartX);
+                        image.setImageWidth((int) stickerStartSize);
+                        image.setImageHeight((int) stickerStartSize);
+
+                        animatorUpdateListener = valueAnimator -> {
+                            float value = (float) valueAnimator.getAnimatedValue();
+
+                            int cellY = AndroidUtilities.getYOnScreen(cell);
+                            float yDiff = value * (startY - cellY);
+                            float y = startY - value * (startY - cellY);
+                            child.setY(y);
+
+                            float sizeDiff = stickerDiffSize * value;
+                            float x = stickerStartX + stickerDiffX * value;
+                            float size = stickerStartSize + sizeDiff;
+                            image.setImageCoords(x, image.getImageY(), size, size);
+
+                            TextView emojiTextView = cell.getTransitionParams().emojiTextView;
+                            emojiTextView.setX(x);
+                            emojiTextView.setY(emojiStartY - yDiff);
+                            float scale = size / stickerStartSize * .8f;
+                            emojiTextView.setScaleX(scale);
+                            emojiTextView.setScaleY(scale);
+                            emojiTextView.setAlpha(1.0f - value * 6);
+                        };
+
+                    } else {
+                        // From sticker panel
+                        View stickerView = chatActivityEnterView.stickerOnPanelView; // 144 * 164
+                        chatActivityEnterView.stickerOnPanelView = null;
+                        Point inputStickerLocation = AndroidUtilities.getLocationOnScreen(stickerView);
+                        Point diff = inputStickerLocation.subtract(cellTextLocation);
+                        startY = (int) (cellLocation.y + diff.y);
+
+                        child.setY(startY);
+
+                        final float stickerStartX = stickerView.getX();
+                        final float emojiStartY = stickerView.getY();
+                        final float stickerDiffX = cell.getPhotoImage().getImageX() - stickerStartX;
+                        final float stickerStartSize = stickerView.getWidth() + image.getSideClip();
+                        final float stickerDiffSize = cell.getPhotoImage().getImageWidth() - stickerStartSize;
+
+                        image.setImageX((int) stickerStartX);
+                        image.setImageWidth((int) stickerStartSize);
+                        image.setImageHeight((int) stickerStartSize);
+
+                        animatorUpdateListener = valueAnimator -> {
+                            float value = (float) valueAnimator.getAnimatedValue();
+
+                            int cellY = AndroidUtilities.getYOnScreen(cell);
+                            float yDiff = value * (startY - cellY);
+                            float y = startY - value * (startY - cellY);
+                            child.setY(y);
+
+                            float sizeDiff = stickerDiffSize * value;
+                            float x = stickerStartX + stickerDiffX * value;
+                            float size = stickerStartSize + sizeDiff;
+                            image.setImageCoords(x, image.getImageY(), size, size);
+
+                            // Not really needed. May be needed for the refinement
+                            stickerView.setAlpha(0);
+//                            stickerView.setX(x);
+//                            stickerView.setY(emojiStartY - yDiff);
+//                            float scale = size / stickerStartSize * .8f;
+//                            stickerView.setScaleX(scale);
+//                            stickerView.setScaleY(scale);
+//                            stickerView.setAlpha(1.0f - value * 6);
+                        };
+                    }
                     break;
                 }
 
@@ -416,42 +516,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             ValueAnimator animation = ValueAnimator.ofFloat(0, 1).setDuration(animationDuration);
             child.animator = animation;
             animation.setInterpolator(translationInterpolator);
-            animation.addUpdateListener(valueAnimator -> {
-                float value = (float) valueAnimator.getAnimatedValue();
-
-                int cellY = AndroidUtilities.getYOnScreen(cell);
-                float yDiff = value * (startY - cellY);
-                float y = startY - value * (startY - cellY);
-                child.setY(y);
-
-                switch (messageObject.type) {
-
-                    case MessageObject.TYPE_TEXT: {
-                        float scale = scaleStart - scaleDiff * value;
-                        child.setScaleX(scale);
-                        child.setScaleY(scale);
-                        break;
-                    }
-
-                    case MessageObject.TYPE_STICKER:
-                    case MessageObject.TYPE_ANIMATED_STICKER: {
-                        float sizeDiff = stickerDiffSize * value;
-                        float x = stickerStartX + stickerDiffX * value;
-                        float size = stickerStartSize + sizeDiff;
-                        image.setImageCoords(x, image.getImageY(), size, size);
-
-                        TextView emojiTextView = cell.getTransitionParams().emojiTextView;
-                        emojiTextView.setX(x);
-                        emojiTextView.setY(emojiStartY - yDiff);
-                        float scale = size / stickerStartSize * .8f;
-                        emojiTextView.setScaleX(scale);
-                        emojiTextView.setScaleY(scale);
-                        emojiTextView.setAlpha(1.0f - value * 6);
-                        break;
-                    }
-                }
-            });
-
+            animation.addUpdateListener(animatorUpdateListener);
             animation.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animation) {
@@ -483,16 +548,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     }
                 }
             });
-
             animation.start();
-            switch (messageObject.type) {
-                case MessageObject.TYPE_TEXT:
-                    cell.backgroundDrawableAnimation.start(animationDuration, -diff.x);
-                    break;
-                case MessageObject.TYPE_STICKER:
-                case MessageObject.TYPE_ANIMATED_STICKER:
-                    break;
-            }
         } else {
             animateAddImplDefault(holder, addedItemsHeight);
         }

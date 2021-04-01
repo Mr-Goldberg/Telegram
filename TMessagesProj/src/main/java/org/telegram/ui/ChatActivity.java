@@ -281,7 +281,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private TextView replyButton;
     private FrameLayout emptyViewContainer;
     private ChatGreetingsView greetingsViewContainer;
-    private SizeNotifierFrameLayout contentView;
+    /*private*/ public SizeNotifierFrameLayout contentView;
+    public ViewGroupOverlay contentViewOverlay;
     private ChatBigEmptyView bigEmptyView;
     private ArrayList<View> actionModeViews = new ArrayList<>();
     private ChatAvatarContainer avatarContainer;
@@ -3033,6 +3034,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (inBubbleMode) {
             contentView.setOccupyStatusBar(false);
         }
+        contentViewOverlay = contentView.getOverlay();
 
         contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
 
