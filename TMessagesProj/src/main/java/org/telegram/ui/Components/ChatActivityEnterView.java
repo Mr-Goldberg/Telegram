@@ -3884,6 +3884,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         setTextLocationOnLastMessageSent();
         if (delegate != null) {
             delegate.onMessageSend(message, notify, scheduleDate);
+
         }
     }
 

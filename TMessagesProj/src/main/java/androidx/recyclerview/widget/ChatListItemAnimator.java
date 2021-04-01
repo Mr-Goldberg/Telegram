@@ -5,12 +5,15 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.graphics.Color;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
 import android.view.ViewPropertyAnimator;
 import android.view.animation.OvershootInterpolator;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,6 +21,7 @@ import androidx.core.view.ViewCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
@@ -29,6 +33,7 @@ import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.ChatGreetingsView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextCaption;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Rect;
 import org.telegram.ui.Components.RecyclerListView;
@@ -304,8 +309,26 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         resetAnimation(holder);
         final View view = holder.itemView;
         View child = view;
+
         if (view instanceof ChatMessageCell) {
             ChatMessageCell cell = (ChatMessageCell) view;
+            MessageObject messageObject = cell.getMessageObject();
+            if (messageObject.type == MessageObject.TYPE_STICKER || messageObject.type == MessageObject.TYPE_ANIMATED_STICKER) {
+                TextView textView = new TextView(view.getContext());
+                textView.setPadding(messageEditText.getPaddingLeft(), messageEditText.getPaddingTop(), messageEditText.getPaddingRight(), messageEditText.getPaddingBottom());
+                textView.setPivotX(textView.getPaddingLeft());
+                textView.setPivotY(textView.getPaddingTop());
+                CharSequence emoji = Emoji.replaceEmoji(messageObject.messageText, messageEditText.getPaint().getFontMetricsInt(), ChatActivityEnterView.EMOJI_SIZE, true);
+                textView.setText(emoji);
+                textView.measure(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                Point inputTextLocation = AndroidUtilities.getLocationOnScreen(messageEditText);
+                int x = (int) inputTextLocation.x;
+                int y = (int) inputTextLocation.y;
+                textView.layout(x, y, x + textView.getMeasuredWidth(), y + textView.getMeasuredHeight());
+                overlay.add(textView);
+                cell.getTransitionParams().emojiTextView = textView;
+                cell.getPhotoImage().setCrossfadeDuration(1);
+            }
             child = ((BaseCell) view).cellDrawingView;
             overlay.add(child);
         }
@@ -359,10 +382,12 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             final int startY = (int) (cellLocation.y + diff.y);
             child.setY(startY);
 
+            ImageReceiver image = cell.getPhotoImage();
             final float stickerStartX = inputTextLocation.x;
             final float stickerDiffX = cell.getPhotoImage().getImageX() - stickerStartX;
-            final float stickerStartSize = ChatActivityEnterView.EMOJI_SIZE;
+            final float stickerStartSize = ChatActivityEnterView.EMOJI_SIZE + image.getSideClip();
             final float stickerDiffSize = cell.getPhotoImage().getImageWidth() - stickerStartSize;
+            final float emojiStartY = cell.getTransitionParams().emojiTextView.getY();
 
             switch (messageObject.type) {
 
@@ -376,10 +401,9 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                 case MessageObject.TYPE_STICKER:
                 case MessageObject.TYPE_ANIMATED_STICKER: {
-                    ImageReceiver image = cell.getPhotoImage();
                     image.setImageX((int) stickerStartX);
-                    image.setImageWidth(50);
-                    image.setImageHeight(50);
+                    image.setImageWidth((int) stickerStartSize);
+                    image.setImageHeight((int) stickerStartSize);
                     break;
                 }
 
@@ -396,6 +420,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 float value = (float) valueAnimator.getAnimatedValue();
 
                 int cellY = AndroidUtilities.getYOnScreen(cell);
+                float yDiff = value * (startY - cellY);
                 float y = startY - value * (startY - cellY);
                 child.setY(y);
 
@@ -410,11 +435,18 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                     case MessageObject.TYPE_STICKER:
                     case MessageObject.TYPE_ANIMATED_STICKER: {
-                        ImageReceiver image = cell.getPhotoImage();
+                        float sizeDiff = stickerDiffSize * value;
                         float x = stickerStartX + stickerDiffX * value;
-                        float size = stickerStartSize + stickerDiffSize * value;
+                        float size = stickerStartSize + sizeDiff;
                         image.setImageCoords(x, image.getImageY(), size, size);
-                        image.setAlpha(1.0f);
+
+                        TextView emojiTextView = cell.getTransitionParams().emojiTextView;
+                        emojiTextView.setX(x);
+                        emojiTextView.setY(emojiStartY - yDiff);
+                        float scale = size / stickerStartSize * .8f;
+                        emojiTextView.setScaleX(scale);
+                        emojiTextView.setScaleY(scale);
+                        emojiTextView.setAlpha(1.0f - value * 6);
                         break;
                     }
                 }
@@ -431,6 +463,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     overlay.clear();
                     cell.restoreContainer();
                     cell.backgroundDrawableAnimation.finish();
+                    cell.setAlpha(1);
+                    child.setAlpha(1);
                     child.setTranslationY(0);
                     child.setScaleX(1);
                     child.setScaleY(1);

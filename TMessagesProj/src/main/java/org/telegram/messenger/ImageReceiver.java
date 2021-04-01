@@ -1516,6 +1516,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         imageH = height;
     }
 
+    public float getSideClip() {
+        return sideClip;
+    }
+
     public void setSideClip(float value) {
         sideClip = value;
     }

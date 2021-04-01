@@ -64,6 +64,7 @@ import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.animation.Interpolator;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -13515,6 +13516,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public class TransitionParams {
+
+        //
+        // RecyclerView 'Add'
+        //
+
+        // Sticker from single text emoji
+
+        public TextView emojiTextView;
+
+        //
 
         public float lastDrawingImageX, lastDrawingImageY, lastDrawingImageW, lastDrawingImageH;
         public float lastDrawingCaptionX, lastDrawingCaptionY;
