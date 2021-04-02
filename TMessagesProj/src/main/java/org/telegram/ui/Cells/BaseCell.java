@@ -123,6 +123,8 @@ public abstract class BaseCell extends ViewGroup {
     public void restoreContainer() {
         if (cellDrawingView.getParent() != this) {
             this.addView(cellDrawingView);
+            cellDrawingView.setMatchCellContainer();
+            invalidate();
         }
     }
 
@@ -158,6 +160,8 @@ public abstract class BaseCell extends ViewGroup {
             setTop(0);
             setRight(cellContainer.getMeasuredWidth());
             setBottom(cellContainer.getMeasuredHeight());
+            setX(0);
+            setY(0);
         }
 
         @Override

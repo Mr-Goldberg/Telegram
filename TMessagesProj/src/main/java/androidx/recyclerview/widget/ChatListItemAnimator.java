@@ -5,11 +5,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
-import android.graphics.Color;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
 import android.view.ViewPropertyAnimator;
 import android.view.animation.OvershootInterpolator;
@@ -35,7 +33,6 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
-import org.telegram.ui.Components.Rect;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.Size;
 
@@ -408,7 +405,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                         // TODO extract
                         int cellY = AndroidUtilities.getYOnScreen(cell);
-                        float yDiff = value * (startY - cellY);
                         float y = startY - value * (startY - cellY);
                         child.setY(y);
 
