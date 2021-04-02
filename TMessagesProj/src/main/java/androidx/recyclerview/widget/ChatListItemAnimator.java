@@ -368,7 +368,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     public void animateAddImpl(final RecyclerView.ViewHolder holder, int addedItemsHeight) {
         final long animationDuration = getMoveDuration() + 900;
         final View view = holder.itemView;
-        Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition() + " " + view.getWidth() + " " + view.getHeight() + " " + view);
+        Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition());
         mAddAnimations.add(holder);
 
         if (useDefaultAddAnimation(view)) {
@@ -1137,9 +1137,11 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             // Don't know how to run change animations when the same view holder is re-used.
             // run a move animation to handle position changes.
 
-            // FIXME check if something is broken
-            //return animateMove(oldHolder, info, fromX, fromY, toX, toY);
-            return false;
+            if (fromX == toX && fromY == toY) {
+                return false;
+            } else {
+                return animateMove(oldHolder, info, fromX, fromY, toX, toY);
+            }
         }
         final float prevTranslationX;
         if (oldHolder.itemView instanceof ChatMessageCell) {
