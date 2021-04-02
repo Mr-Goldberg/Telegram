@@ -37,6 +37,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Rect;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.Size;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -372,6 +373,9 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
             MessageObject messageObject = cell.getMessageObject();
 //            Log.d(TAG, "animateAddImpl(2) " + messageObject.type + " " + messageObject.contentType + " " + messageObject.localType);
+
+            // Animation
+
             ValueAnimator.AnimatorUpdateListener animatorUpdateListener;
             switch (messageObject.type) {
 
@@ -463,7 +467,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                     } else {
                         // From sticker panel
-                        View stickerView = chatActivityEnterView.stickerOnPanelView; // 144 * 164
+                        View stickerView = chatActivityEnterView.stickerOnPanelView; // Size 144 * 164
                         chatActivityEnterView.stickerOnPanelView = null;
                         Point inputStickerLocation = AndroidUtilities.getLocationOnScreen(stickerView);
                         Point diff = inputStickerLocation.subtract(cellTextLocation);
@@ -471,37 +475,45 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                         child.setY(startY);
 
+                        Log.d("XXX", "" + image.getImageX() + " " + image.getImageY() + " " + image.getImageWidth() + " " + image.getImageHeight());
+
                         final float stickerStartX = stickerView.getX();
                         final float emojiStartY = stickerView.getY();
-                        final float stickerDiffX = cell.getPhotoImage().getImageX() - stickerStartX;
-                        final float stickerStartSize = stickerView.getWidth() + image.getSideClip();
-                        final float stickerDiffSize = cell.getPhotoImage().getImageWidth() - stickerStartSize;
+                        final float stickerDiffX = image.getImageX() - stickerStartX;
+                        final Size stickerStartSize = new Size(stickerView.getWidth()-image.getSideClip(), stickerView.getHeight()-image.getSideClip());
+                        final Size stickerDiffSize = new Size(image.getImageWidth() - stickerStartSize.width, image.getImageHeight() - stickerStartSize.height);
+//                        final float stickerStartSize = stickerView.getWidth() + image.getSideClip();
+//                        final float stickerDiffSize = image.getImageWidth() - stickerStartSize;
 
                         image.setImageX((int) stickerStartX);
-                        image.setImageWidth((int) stickerStartSize);
-                        image.setImageHeight((int) stickerStartSize);
+                        image.setImageWidth((int) stickerStartSize.width);
+                        image.setImageHeight((int) stickerStartSize.height);
 
                         animatorUpdateListener = valueAnimator -> {
                             float value = (float) valueAnimator.getAnimatedValue();
 
                             int cellY = AndroidUtilities.getYOnScreen(cell);
-                            float yDiff = value * (startY - cellY);
                             float y = startY - value * (startY - cellY);
                             child.setY(y);
 
-                            float sizeDiff = stickerDiffSize * value;
+//                            float sizeDiff = stickerDiffSize * value;
                             float x = stickerStartX + stickerDiffX * value;
-                            float size = stickerStartSize + sizeDiff;
-                            image.setImageCoords(x, image.getImageY(), size, size);
+//                            float size = stickerStartSize + sizeDiff;
+                            image.setImageCoords(x, image.getImageY(), stickerStartSize.width + stickerDiffSize.width * value, stickerStartSize.height + stickerDiffSize.height * value);
 
                             // Not really needed. May be needed for the refinement
                             stickerView.setAlpha(0);
+//                            float yDiff = value * (startY - cellY);
 //                            stickerView.setX(x);
 //                            stickerView.setY(emojiStartY - yDiff);
 //                            float scale = size / stickerStartSize * .8f;
 //                            stickerView.setScaleX(scale);
 //                            stickerView.setScaleY(scale);
 //                            stickerView.setAlpha(1.0f - value * 6);
+
+                            if (messageObject.type == MessageObject.TYPE_STICKER) {
+                                cell.invalidate();
+                            }
                         };
                     }
                     break;
