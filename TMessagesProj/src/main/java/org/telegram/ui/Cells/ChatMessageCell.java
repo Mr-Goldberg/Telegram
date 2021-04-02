@@ -39,6 +39,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.text.DynamicLayout;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -822,6 +823,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
     public BackgroundDrawableAnimation backgroundDrawableAnimation = new BackgroundDrawableAnimation();
+    public float textScale = 0.0f;
 
     public ChatMessageCell(Context context) {
         super(context);
@@ -7933,6 +7935,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 MessageObject.TextLayoutBlock block = textLayoutBlocks.get(a);
                 canvas.save();
                 canvas.translate(textX - (block.isRtl() ? (int) Math.ceil(currentMessageObject.textXOffset) : 0), textY + block.textYOffset);
+                if (textScale != 0.0f) {
+                    canvas.scale(textScale, textScale);
+                }
                 if (pressedLink != null && a == linkBlockNum) {
                     for (int b = 0; b < urlPath.size(); b++) {
                         canvas.drawPath(urlPath.get(b), Theme.chat_urlPaint);
@@ -9700,9 +9705,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    // TODO remove on release
     private static final String LTAG = "ChatMessageCell";
     private static final Paint myPaint = new Paint();
-
     private int drawCount = 0;
 
     @SuppressLint("WrongCall")

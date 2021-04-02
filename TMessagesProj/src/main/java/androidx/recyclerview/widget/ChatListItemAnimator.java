@@ -312,24 +312,32 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             ChatMessageCell cell = (ChatMessageCell) view;
             MessageObject messageObject = cell.getMessageObject();
             Log.d(TAG, "animateAdd() type " + messageObject.type);
-            if (messageObject.type == MessageObject.TYPE_STICKER || messageObject.type == MessageObject.TYPE_ANIMATED_STICKER) {
-                if (chatActivityEnterView.stickerOnPanelView == null) {
-                    TextView textView = new TextView(view.getContext());
-                    textView.setPadding(messageEditText.getPaddingLeft(), messageEditText.getPaddingTop(), messageEditText.getPaddingRight(), messageEditText.getPaddingBottom());
-                    textView.setPivotX(textView.getPaddingLeft());
-                    textView.setPivotY(textView.getPaddingTop());
-                    CharSequence emoji = Emoji.replaceEmoji(messageObject.messageText, messageEditText.getPaint().getFontMetricsInt(), ChatActivityEnterView.EMOJI_SIZE, true);
-                    textView.setText(emoji);
-                    textView.measure(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-                    Point inputTextLocation = AndroidUtilities.getLocationOnScreen(messageEditText);
-                    int x = (int) inputTextLocation.x;
-                    int y = (int) inputTextLocation.y;
-                    textView.layout(x, y, x + textView.getMeasuredWidth(), y + textView.getMeasuredHeight());
-                    cell.getTransitionParams().emojiTextView = textView;
-                    cell.getPhotoImage().setCrossfadeDuration(1);
-                    overlay.add(textView);
-                } else {
-                    overlay.add(chatActivityEnterView.stickerOnPanelView);
+            switch (messageObject.type) {
+                case MessageObject.TYPE_TEXT: {
+                    cell.textScale = messageEditText.getTextSize() / messageObject.textLayoutBlocks.get(0).textLayout.getPaint().getTextSize();
+                    break;
+                }
+                case MessageObject.TYPE_STICKER:
+                case MessageObject.TYPE_ANIMATED_STICKER: {
+                    if (chatActivityEnterView.stickerOnPanelView == null) {
+                        TextView textView = new TextView(view.getContext());
+                        textView.setPadding(messageEditText.getPaddingLeft(), messageEditText.getPaddingTop(), messageEditText.getPaddingRight(), messageEditText.getPaddingBottom());
+                        textView.setPivotX(textView.getPaddingLeft());
+                        textView.setPivotY(textView.getPaddingTop());
+                        CharSequence emoji = Emoji.replaceEmoji(messageObject.messageText, messageEditText.getPaint().getFontMetricsInt(), ChatActivityEnterView.EMOJI_SIZE, true);
+                        textView.setText(emoji);
+                        textView.measure(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                        Point inputTextLocation = AndroidUtilities.getLocationOnScreen(messageEditText);
+                        int x = (int) inputTextLocation.x;
+                        int y = (int) inputTextLocation.y;
+                        textView.layout(x, y, x + textView.getMeasuredWidth(), y + textView.getMeasuredHeight());
+                        cell.getTransitionParams().emojiTextView = textView;
+                        cell.getPhotoImage().setCrossfadeDuration(1);
+                        overlay.add(textView);
+                    } else {
+                        overlay.add(chatActivityEnterView.stickerOnPanelView);
+                    }
+                    break;
                 }
             }
             child = ((BaseCell) view).cellDrawingView;
@@ -389,13 +397,9 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     }
                     child.setY(startY);
 
-                    // TODO determine scale from text sizes
-                    final float scaleStart = 1.125f;
-                    final float scaleDiff = 0.125f;
-                    child.setPivotX(inputTextLocation.x); // Assuming cell is screen-wide
-                    child.setPivotY(cell.textY);
-                    child.setScaleX(scaleStart);
-                    child.setScaleY(scaleStart);
+                    float startTextScale = messageEditText.getTextSize() / messageObject.textLayoutBlocks.get(0).textLayout.getPaint().getTextSize();
+                    float textScaleDiff = 1 - startTextScale;
+                    cell.textScale = startTextScale;
 
                     // TODO move to animator update block
                     cell.backgroundDrawableAnimation.start(animationDuration, -diff.x);
@@ -408,9 +412,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                         float y = startY - value * (startY - cellY);
                         child.setY(y);
 
-                        float scale = scaleStart - scaleDiff * value;
-                        child.setScaleX(scale);
-                        child.setScaleY(scale);
+                        cell.textScale = startTextScale + textScaleDiff * value;
                     };
                     break;
                 }
@@ -536,11 +538,10 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     overlay.clear();
                     cell.restoreContainer();
                     cell.backgroundDrawableAnimation.finish();
+                    cell.textScale = 0;
                     cell.setAlpha(1);
                     child.setAlpha(1);
                     child.setTranslationY(0);
-                    child.setScaleX(1);
-                    child.setScaleY(1);
                     cell.getTransitionParams().messageEntering = false;
                 }
 
@@ -548,6 +549,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 public void onAnimationEnd(Animator animation) {
                     overlay.clear();
                     cell.restoreContainer();
+                    cell.textScale = 0;
                     cell.getTransitionParams().messageEntering = false;
                     animation.removeListener(this);
                     if (mAddAnimations.remove(holder)) {
