@@ -27,6 +27,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.LoadingStickerDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.Rect;
 import org.telegram.ui.Components.RecyclableDrawable;
 
 import androidx.annotation.Keep;
@@ -1514,6 +1515,13 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         imageY = y;
         imageW = width;
         imageH = height;
+    }
+
+    public void setImageCoords(Rect rect) {
+        imageX = rect.x;
+        imageY = rect.y;
+        imageW = rect.width;
+        imageH = rect.height;
     }
 
     public float getSideClip() {

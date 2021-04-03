@@ -86,6 +86,8 @@ import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -115,6 +117,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
@@ -298,7 +301,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     // Emoji from emoji panel
 
-    public View stickerOnPanelView;
+    public StickerEmojiCell stickerOnPanelView;
 
     //
     // Send animation
@@ -3897,7 +3900,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         setTextLocationOnLastMessageSent();
         if (delegate != null) {
             delegate.onMessageSend(message, notify, scheduleDate);
-
         }
     }
 
@@ -6146,7 +6148,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                     setStickersExpanded(false, true, false);
                 }
-                stickerOnPanelView = view;
+                if (view instanceof StickerEmojiCell) {
+                    stickerOnPanelView = (StickerEmojiCell) view;
+                }
                 ChatActivityEnterView.this.onStickerSelected(sticker, query, parent, false, notify, scheduleDate);
                 if ((int) dialog_id == 0 && MessageObject.isGifDocument(sticker)) {
                     accountInstance.getMessagesController().saveGif(parent, sticker);

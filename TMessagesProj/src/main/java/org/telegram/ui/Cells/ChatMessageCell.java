@@ -49,6 +49,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
 import android.util.StateSet;
@@ -7338,6 +7339,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     photoImage.setSideClip(0);
                 }
+                if (transitionParams.stickerCoords != null) {
+                    photoImage.setImageCoords(transitionParams.stickerCoords);
+                }
                 imageDrawn = photoImage.draw(canvas); // Calls invalidate() inside
                 boolean drawTimeOld = drawTime;
                 drawTime = photoImage.getVisible();
@@ -13489,6 +13493,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         public int backgroundDrawableCurrentLeft = Integer.MIN_VALUE;
         public int backgroundDrawableTargetLeft = Integer.MIN_VALUE;
 
+        // Sticker from sticker panel
+
+        public org.telegram.ui.Components.Rect stickerCoords;
+
         // Sticker from single text emoji
 
         public TextView emojiTextView;
@@ -13498,6 +13506,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             backgroundDrawableAlpha = 1.0f;
             backgroundDrawableCurrentLeft = Integer.MIN_VALUE;
             backgroundDrawableTargetLeft = Integer.MIN_VALUE;
+            stickerCoords = null;
             emojiTextView = null;
         }
 

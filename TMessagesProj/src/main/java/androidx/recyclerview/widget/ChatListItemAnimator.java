@@ -27,6 +27,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.ui.Cells.BaseCell;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.ChatGreetingsView;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ChatListItemAnimator extends DefaultItemAnimator {
 
@@ -51,6 +53,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     private final ViewGroupOverlay overlay;
     private ChatActivityEnterView chatActivityEnterView;
     private EditTextCaption messageEditText;
+    private Map<Integer, StickerEmojiCell> stickerOnPanelViews = new HashMap<>();
 
     private HashMap<Integer, MessageObject.GroupedMessages> willRemovedGroup = new HashMap<>();
     private ArrayList<MessageObject.GroupedMessages> willChangedGroups = new ArrayList<>();
@@ -293,7 +296,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     private static boolean useDefaultAddAnimation(View view) {
         if (view instanceof ChatMessageCell) {
             MessageObject messageObject = ((ChatMessageCell) view).getMessageObject();
-            if (messageObject.isOutOwner()) {
+            if (messageObject.isOutOwner() && messageObject.wasJustSent) {
                 switch (messageObject.type) {
                     case MessageObject.TYPE_TEXT:
                     case MessageObject.TYPE_STICKER:
@@ -319,7 +322,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             ChatMessageCell cell = (ChatMessageCell) view;
             View child = cell.cellDrawingView;
             MessageObject messageObject = cell.getMessageObject();
-            Log.d(TAG, "animateAdd() type " + messageObject.type);
+            Log.d(TAG, "animateAdd() type " + messageObject.type + " " + messageObject.stableId);
             switch (messageObject.type) {
                 case MessageObject.TYPE_TEXT: {
                     cell.getTransitionParams().backgroundDrawableAlpha = 0;
@@ -328,6 +331,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
                 case MessageObject.TYPE_STICKER:
                 case MessageObject.TYPE_ANIMATED_STICKER: {
+                    // From text field
                     if (chatActivityEnterView.stickerOnPanelView == null) {
                         TextView textView = new TextView(view.getContext());
                         textView.setPadding(messageEditText.getPaddingLeft(), messageEditText.getPaddingTop(), messageEditText.getPaddingRight(), messageEditText.getPaddingBottom());
@@ -343,8 +347,13 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                         cell.getTransitionParams().emojiTextView = textView;
                         cell.getPhotoImage().setCrossfadeDuration(1);
                         overlay.add(textView);
-                    } else {
-                        overlay.add(chatActivityEnterView.stickerOnPanelView);
+                    }
+                    // From sticker panel
+                    else {
+                        stickerOnPanelViews.put(messageObject.stableId, chatActivityEnterView.stickerOnPanelView);
+//                        View stickerView = chatActivityEnterView.stickerOnPanelView;
+//                        overlay.add(chatActivityEnterView.stickerOnPanelView);
+                        chatActivityEnterView.stickerOnPanelView = null;
                     }
                     break;
                 }
@@ -368,7 +377,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     // 3
     public void animateAddImpl(final RecyclerView.ViewHolder holder, int addedItemsHeight) {
-        final long animationDuration = getMoveDuration() + 900;
+        final long animationDuration = getMoveDuration() + 3900;
         final View view = holder.itemView;
         Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition());
         mAddAnimations.add(holder);
@@ -392,6 +401,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         ValueAnimator.AnimatorUpdateListener animatorUpdateListener;
         switch (messageObject.type) {
 
+            // FIXME animation flickers (one frame) at the begining sometimes. I have to move animation start params to the animateAdd(), before the first draw.
             case MessageObject.TYPE_TEXT: {
 
                 // Y cell animation
@@ -450,8 +460,9 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 final int startY;
                 Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
                 Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
-                if (chatActivityEnterView.stickerOnPanelView == null) {
-                    // From text field
+                final StickerEmojiCell stickerView = stickerOnPanelViews.get(messageObject.stableId);
+                // From text field
+                if (stickerView == null) {
                     Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
                     Point diff = inputTextLocation.subtract(cellTextLocation);
                     startY = (int) (cellLocation.y + diff.y);
@@ -489,53 +500,43 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                         emojiTextView.setScaleY(scale);
                         emojiTextView.setAlpha(1.0f - value * 6);
                     };
-
-                } else {
-                    // From sticker panel
-                    View stickerView = chatActivityEnterView.stickerOnPanelView; // Size 144 * 164
-                    chatActivityEnterView.stickerOnPanelView = null;
-                    Point inputStickerLocation = AndroidUtilities.getLocationOnScreen(stickerView);
-                    Point diff = inputStickerLocation.subtract(cellTextLocation);
-                    startY = (int) (cellLocation.y + diff.y);
-
+                }
+                // From sticker panel
+                else {
+                    final float startX;
+                    {
+                        Point stickerViewLocation = AndroidUtilities.getLocationOnScreen(stickerView.getImageView());
+                        startX = stickerViewLocation.x;
+                        startY = (int)(stickerViewLocation.y - image.getImageY());
+                    }
                     child.setY(startY);
-
-//                    Log.d("XXX", "" + image.getImageX() + " " + image.getImageY() + " " + image.getImageWidth() + " " + image.getImageHeight());
-
-                    final float stickerStartX = stickerView.getX();
-                    final float emojiStartY = stickerView.getY();
-                    final float stickerDiffX = image.getImageX() - stickerStartX;
-                    final Size stickerStartSize = new Size(stickerView.getWidth() - image.getSideClip(), stickerView.getHeight() - image.getSideClip());
+                    final float stickerDiffX = image.getImageX() - startX;
+                    final Size stickerStartSize = new Size(stickerView.getImageView().getWidth(), stickerView.getImageView().getHeight());
                     final Size stickerDiffSize = new Size(image.getImageWidth() - stickerStartSize.width, image.getImageHeight() - stickerStartSize.height);
-//                        final float stickerStartSize = stickerView.getWidth() + image.getSideClip();
-//                        final float stickerDiffSize = image.getImageWidth() - stickerStartSize;
 
-                    image.setImageX((int) stickerStartX);
-                    image.setImageWidth((int) stickerStartSize.width);
-                    image.setImageHeight((int) stickerStartSize.height);
+                    ChatMessageCell.TransitionParams transition = cell.getTransitionParams();
+                    transition.stickerCoords = new org.telegram.ui.Components.Rect(startX, image.getImageY(), stickerStartSize.width, stickerStartSize.height);
+                    cell.invalidate();
+
+//                    Log.d("XXX", "sticker "+stickerView.getWidth()+" "+stickerView.getHeight()+" "+
+//                            stickerView.getImageView().getWidth() +" "+stickerView.getImageView().getHeight() +" "+
+//                            stickerView.getImageView().getImageReceiver().getImageWidth() +" "+stickerView.getImageView().getImageReceiver().getImageHeight());
 
                     animatorUpdateListener = valueAnimator -> {
                         float value = (float) valueAnimator.getAnimatedValue();
+                        
+                        if (value < 0.2f) {
+                            value = 0;
+                        }
 
                         int cellY = AndroidUtilities.getYOnScreen(cell);
                         float y = startY - value * (startY - cellY);
                         child.setY(y);
 
-//                            float sizeDiff = stickerDiffSize * value;
-                        float x = stickerStartX + stickerDiffX * value;
-//                            float size = stickerStartSize + sizeDiff;
-                        image.setImageCoords(x, image.getImageY(), stickerStartSize.width + stickerDiffSize.width * value, stickerStartSize.height + stickerDiffSize.height * value);
+                        float x = startX + stickerDiffX * value;
+                        transition.stickerCoords.set(x, transition.stickerCoords.y, stickerStartSize.width + stickerDiffSize.width * value, stickerStartSize.height + stickerDiffSize.height * value);
 
-                        // Not really needed. May be needed for the refinement
-                        stickerView.setAlpha(0);
-//                            float yDiff = value * (startY - cellY);
-//                            stickerView.setX(x);
-//                            stickerView.setY(emojiStartY - yDiff);
-//                            float scale = size / stickerStartSize * .8f;
-//                            stickerView.setScaleX(scale);
-//                            stickerView.setScaleY(scale);
-//                            stickerView.setAlpha(1.0f - value * 6);
-
+                        // Invalidate for non-animated sticker
                         if (messageObject.type == MessageObject.TYPE_STICKER) {
                             cell.invalidate();
                         }
