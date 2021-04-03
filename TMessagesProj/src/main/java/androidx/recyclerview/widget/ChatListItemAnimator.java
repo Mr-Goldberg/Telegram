@@ -323,6 +323,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             View child = cell.cellDrawingView;
             MessageObject messageObject = cell.getMessageObject();
             Log.d(TAG, "animateAdd() type " + messageObject.type + " " + messageObject.stableId);
+            cell.getTransitionParams().resetEntryAnimationParams();
             switch (messageObject.type) {
                 case MessageObject.TYPE_TEXT: {
                     cell.getTransitionParams().backgroundDrawableAlpha = 0;
@@ -354,6 +355,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 //                        View stickerView = chatActivityEnterView.stickerOnPanelView;
 //                        overlay.add(chatActivityEnterView.stickerOnPanelView);
                         chatActivityEnterView.stickerOnPanelView = null;
+                        cell.getPhotoImage().setAspectFit(true);
                     }
                     break;
                 }
@@ -377,7 +379,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     // 3
     public void animateAddImpl(final RecyclerView.ViewHolder holder, int addedItemsHeight) {
-        final long animationDuration = getMoveDuration() + 3900;
+        final long animationDuration = getMoveDuration() + 900;
         final View view = holder.itemView;
         Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition());
         mAddAnimations.add(holder);
@@ -517,17 +519,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     ChatMessageCell.TransitionParams transition = cell.getTransitionParams();
                     transition.stickerCoords = new org.telegram.ui.Components.Rect(startX, image.getImageY(), stickerStartSize.width, stickerStartSize.height);
                     cell.invalidate();
-
-//                    Log.d("XXX", "sticker "+stickerView.getWidth()+" "+stickerView.getHeight()+" "+
-//                            stickerView.getImageView().getWidth() +" "+stickerView.getImageView().getHeight() +" "+
-//                            stickerView.getImageView().getImageReceiver().getImageWidth() +" "+stickerView.getImageView().getImageReceiver().getImageHeight());
-
                     animatorUpdateListener = valueAnimator -> {
                         float value = (float) valueAnimator.getAnimatedValue();
-                        
-                        if (value < 0.2f) {
-                            value = 0;
-                        }
 
                         int cellY = AndroidUtilities.getYOnScreen(cell);
                         float y = startY - value * (startY - cellY);
@@ -624,6 +617,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     private void finalizeCellAnimation(ChatMessageCell cell) {
         cell.setAlpha(1);
+        cell.getPhotoImage().setAspectFit(false);
+        stickerOnPanelViews.remove(cell.getMessageObject().stableId);
 
         BaseCell.CellDrawingView child = cell.cellDrawingView;
         child.setAlpha(1);

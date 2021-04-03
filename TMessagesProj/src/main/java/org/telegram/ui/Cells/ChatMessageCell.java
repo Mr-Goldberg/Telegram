@@ -13501,7 +13501,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         public TextView emojiTextView;
 
-        private void resetEntryAnimationParams() {
+        public void resetEntryAnimationParams() {
             textScale = 1.0f;
             backgroundDrawableAlpha = 1.0f;
             backgroundDrawableCurrentLeft = Integer.MIN_VALUE;
