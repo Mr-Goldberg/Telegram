@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.graphics.Rect;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
@@ -321,6 +322,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             Log.d(TAG, "animateAdd() type " + messageObject.type);
             switch (messageObject.type) {
                 case MessageObject.TYPE_TEXT: {
+                    cell.getTransitionParams().backgroundDrawableAlpha = 0;
                     cell.textScale = messageEditText.getTextSize() / messageObject.textLayoutBlocks.get(0).textLayout.getPaint().getTextSize();
                     break;
                 }
@@ -391,11 +393,14 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         switch (messageObject.type) {
 
             case MessageObject.TYPE_TEXT: {
-                final Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
+
+                // Y cell animation
+
                 final Point diff;
                 final int startY;
                 {
                     // FIXME move to animateAdd(), however, textX is not calculated at that point (calculation is in onDraw())
+                    final Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
                     Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
                     Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
                     diff = inputTextLocation.subtract(cellTextLocation);
@@ -403,20 +408,36 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
                 child.setY(startY);
 
-                float startTextScale = messageEditText.getTextSize() / messageObject.textLayoutBlocks.get(0).textLayout.getPaint().getTextSize();
-                float textScaleDiff = 1 - startTextScale;
-                cell.textScale = startTextScale;
+                // X background animation
 
-                // TODO move to animator update block
-                cell.backgroundDrawableAnimation.start(animationDuration, -diff.x);
+                Rect bgDrawableBounds = cell.getCurrentBackgroundDrawable().getBounds();
+                ChatMessageCell.TransitionParams transition = cell.getTransitionParams();
+                float leftDiff = -diff.x;
+                transition.backgroundDrawableTargetLeft = bgDrawableBounds.left;
+                transition.backgroundDrawableCurrentLeft = bgDrawableBounds.left - (int) leftDiff;
+                cell.invalidate();
+
+                // Text scale animation
+
+                float startTextScale = cell.textScale;
+                float textScaleDiff = 1 - startTextScale;
 
                 animatorUpdateListener = valueAnimator -> {
                     float value = (float) valueAnimator.getAnimatedValue();
 
-                    // TODO extract
+                    // Y cell animation
+
                     int cellY = AndroidUtilities.getYOnScreen(cell);
                     float y = startY - value * (startY - cellY);
                     child.setY(y);
+
+                    // X background animation
+
+                    transition.backgroundDrawableAlpha = value;
+                    transition.backgroundDrawableCurrentLeft = transition.backgroundDrawableTargetLeft - (int) ((1.0f - value) * leftDiff);
+                    cell.invalidate();
+
+                    // Text scale animation
 
                     cell.textScale = startTextScale + textScaleDiff * value;
                 };
@@ -479,7 +500,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                     child.setY(startY);
 
-                    Log.d("XXX", "" + image.getImageX() + " " + image.getImageY() + " " + image.getImageWidth() + " " + image.getImageHeight());
+//                    Log.d("XXX", "" + image.getImageX() + " " + image.getImageY() + " " + image.getImageWidth() + " " + image.getImageHeight());
 
                     final float stickerStartX = stickerView.getX();
                     final float emojiStartY = stickerView.getY();
@@ -524,6 +545,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             }
 
             default: {
+                // Just in case
+                Log.e(TAG, "animateAddImpl(2) Expected to provide special view animation for type: " + messageObject.type);
                 animateAddImplDefault(holder, addedItemsHeight);
                 return;
             }
@@ -541,22 +564,12 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
             @Override
             public void onAnimationCancel(Animator animation) {
-                overlay.clear();
-                cell.restoreContainer();
-                cell.backgroundDrawableAnimation.finish();
-                cell.textScale = 0;
-                cell.setAlpha(1);
-                child.setAlpha(1);
-                child.setTranslationY(0);
-                cell.getTransitionParams().messageEntering = false;
+                finalizeCellAnimation(cell);
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                overlay.clear();
-                cell.restoreContainer();
-                cell.textScale = 0;
-                cell.getTransitionParams().messageEntering = false;
+                finalizeCellAnimation(cell);
                 animation.removeListener(this);
                 if (mAddAnimations.remove(holder)) {
                     dispatchAddFinished(holder);
@@ -606,6 +619,29 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                         }
                     }
                 }).start();
+    }
+
+    private void finalizeCellAnimation(ChatMessageCell cell) {
+        cell.textScale = 0;
+        cell.setAlpha(1);
+
+        BaseCell.CellDrawingView child = cell.cellDrawingView;
+        child.setAlpha(1);
+        child.setTranslationY(0);
+        overlay.remove(child);
+        cell.restoreContainer();
+
+        ChatMessageCell.TransitionParams transition = cell.getTransitionParams();
+        transition.messageEntering = false;
+        if (transition.backgroundDrawableTargetLeft != Integer.MIN_VALUE) {
+            cell.getCurrentBackgroundDrawable().getBounds().left = transition.backgroundDrawableTargetLeft;
+        }
+        if (transition.emojiTextView != null) {
+            overlay.remove(transition.emojiTextView);
+        }
+
+        transition.resetAnimation();
+        cell.invalidate();
     }
 
     @Override

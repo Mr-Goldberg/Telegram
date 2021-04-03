@@ -39,7 +39,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.text.DynamicLayout;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -50,7 +49,6 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.util.Property;
 import android.util.SparseArray;
 import android.util.StateSet;
@@ -780,49 +778,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private SparseArray<Rect> accessibilityVirtualViewBounds = new SparseArray<>();
     private int currentFocusedVirtualView = -1;
 
-    public class BackgroundDrawableAnimation {
-        private long duration = 200;
-        private long startTime = 0;
-        private float leftDiff = 0;
-        private int targetLeft = 0;
+    //
+    // Message Entry Animation
+    //
 
-        public void start(long duration, float diffX) {
-            this.duration = duration;
-            startTime = System.currentTimeMillis();
-            Rect bounds = currentBackgroundDrawable.getBounds();
-            targetLeft = bounds.left;
-            leftDiff = diffX;
-            bounds.left -= diffX;
-            invalidate();
-        }
-
-        public void finish() {
-            startTime = 0;
-            leftDiff = 0;
-            currentBackgroundDrawable.getBounds().left = targetLeft;
-            invalidate();
-        }
-
-        private void drawFrame(Canvas canvas) {
-            float percent = 1.0f;
-            if (startTime != 0) {
-                long progress = System.currentTimeMillis() - startTime;
-                if (progress < duration) {
-                    percent = (float) progress / duration;
-                }
-            }
-
-            currentSelectedBackgroundAlpha = 0;
-            if (leftDiff != 0) {
-                currentBackgroundDrawable.getBounds().left = targetLeft - (int) ((1.0f - percent) * leftDiff);
-            }
-            currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal * percent));
-            currentBackgroundDrawable.draw(canvas);
-
-            if (percent != 1.0f) invalidate();
-        }
-    }
-    public BackgroundDrawableAnimation backgroundDrawableAnimation = new BackgroundDrawableAnimation();
     public float textScale = 0.0f;
 
     public ChatMessageCell(Context context) {
@@ -10029,10 +9988,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                 } else {
                     // Draw simple bubble here
-                    backgroundDrawableAnimation.drawFrame(canvas);
-//                    currentSelectedBackgroundAlpha = 0;
-//                    currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal));
-//                    currentBackgroundDrawable.draw(canvas);
+                    currentSelectedBackgroundAlpha = 0;
+                    if (transitionParams.backgroundDrawableCurrentLeft != Integer.MIN_VALUE) {
+                        currentBackgroundDrawable.getBounds().left = transitionParams.backgroundDrawableCurrentLeft;
+                    }
+                    currentBackgroundDrawable.setAlpha((int) (255 * alphaInternal * transitionParams.backgroundDrawableAlpha));
+                    currentBackgroundDrawable.draw(canvas);
                 }
             }
             if (currentBackgroundShadowDrawable != null && currentPosition == null) {
@@ -13522,15 +13483,30 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     public class TransitionParams {
 
-        //
-        // RecyclerView 'Add'
-        //
+        /**
+         * RecyclerView 'Add'
+         */
+
+        // Text
+
+        public float backgroundDrawableAlpha = 1.0f;
+        public int backgroundDrawableCurrentLeft = Integer.MIN_VALUE;
+        public int backgroundDrawableTargetLeft = Integer.MIN_VALUE;
 
         // Sticker from single text emoji
 
         public TextView emojiTextView;
 
-        //
+        private void resetEntryAnimationParams() {
+            backgroundDrawableAlpha = 1.0f;
+            backgroundDrawableCurrentLeft = Integer.MIN_VALUE;
+            backgroundDrawableTargetLeft = Integer.MIN_VALUE;
+            emojiTextView = null;
+        }
+
+        /**
+         * ~ RecyclerView 'Add'
+         */
 
         public float lastDrawingImageX, lastDrawingImageY, lastDrawingImageW, lastDrawingImageH;
         public float lastDrawingCaptionX, lastDrawingCaptionY;
@@ -13864,6 +13840,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         public void resetAnimation() {
+            resetEntryAnimationParams();
             animateChange = false;
             animatePinned = false;
             animateBackgroundBoundsInner = false;
