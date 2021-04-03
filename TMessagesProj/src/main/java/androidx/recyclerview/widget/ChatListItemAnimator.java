@@ -323,7 +323,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             switch (messageObject.type) {
                 case MessageObject.TYPE_TEXT: {
                     cell.getTransitionParams().backgroundDrawableAlpha = 0;
-                    cell.textScale = messageEditText.getTextSize() / messageObject.textLayoutBlocks.get(0).textLayout.getPaint().getTextSize();
+                    cell.getTransitionParams().textScale = messageEditText.getTextSize() / messageObject.textLayoutBlocks.get(0).textLayout.getPaint().getTextSize();
                     break;
                 }
                 case MessageObject.TYPE_STICKER:
@@ -419,7 +419,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                 // Text scale animation
 
-                float startTextScale = cell.textScale;
+                float startTextScale = transition.textScale;
                 float textScaleDiff = 1 - startTextScale;
 
                 animatorUpdateListener = valueAnimator -> {
@@ -439,7 +439,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
                     // Text scale animation
 
-                    cell.textScale = startTextScale + textScaleDiff * value;
+                    transition.textScale = startTextScale + textScaleDiff * value;
                 };
                 break;
             }
@@ -622,7 +622,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     private void finalizeCellAnimation(ChatMessageCell cell) {
-        cell.textScale = 0;
         cell.setAlpha(1);
 
         BaseCell.CellDrawingView child = cell.cellDrawingView;

@@ -778,12 +778,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private SparseArray<Rect> accessibilityVirtualViewBounds = new SparseArray<>();
     private int currentFocusedVirtualView = -1;
 
-    //
-    // Message Entry Animation
-    //
-
-    public float textScale = 0.0f;
-
     public ChatMessageCell(Context context) {
         super(context);
 
@@ -7887,6 +7881,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 restore = canvas.saveLayerAlpha(rect, (int) (alpha * 255), Canvas.ALL_SAVE_FLAG);
             }
+            float textScale = transitionParams.textScale;
             for (int a = firstVisibleBlockNum; a <= lastVisibleBlockNum; a++) {
                 if (a >= textLayoutBlocks.size()) {
                     break;
@@ -7894,7 +7889,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 MessageObject.TextLayoutBlock block = textLayoutBlocks.get(a);
                 canvas.save();
                 canvas.translate(textX - (block.isRtl() ? (int) Math.ceil(currentMessageObject.textXOffset) : 0), textY + block.textYOffset);
-                if (textScale != 0.0f) {
+                if (textScale != 1.0f) {
                     canvas.scale(textScale, textScale);
                 }
                 if (pressedLink != null && a == linkBlockNum) {
@@ -13489,6 +13484,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         // Text
 
+        public float textScale = 1.0f;
         public float backgroundDrawableAlpha = 1.0f;
         public int backgroundDrawableCurrentLeft = Integer.MIN_VALUE;
         public int backgroundDrawableTargetLeft = Integer.MIN_VALUE;
@@ -13498,6 +13494,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         public TextView emojiTextView;
 
         private void resetEntryAnimationParams() {
+            textScale = 1.0f;
             backgroundDrawableAlpha = 1.0f;
             backgroundDrawableCurrentLeft = Integer.MIN_VALUE;
             backgroundDrawableTargetLeft = Integer.MIN_VALUE;
