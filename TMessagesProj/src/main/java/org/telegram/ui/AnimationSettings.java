@@ -7,6 +7,7 @@ class AnimationSettings {
     // Text
 
     int textDuration = DEFAULT_DURATION;
+    AnimationSettingBezier textInterpolationX = new AnimationSettingBezier();
 
     // Sticker from panel
 

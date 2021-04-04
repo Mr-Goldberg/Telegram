@@ -106,6 +106,12 @@ class AnimationEditorActivity extends BaseFragment {
                     Button durationButton = view.findViewById(R.id.durationButton);
                     durationButton.setText(formatMs(getDuration(viewType)));
                     durationButton.setOnClickListener(button -> showDurationPopup(context, durationButton, viewType));
+                    AnimationEditorBezierView xBezierView = view.findViewById(R.id.xBezierView);
+                    xBezierView.setListener(params -> {
+                        animationSettings.textInterpolationX = params;
+                        settingsStorage.save(animationSettings);
+                    });
+                    xBezierView.setParams(animationSettings.textInterpolationX);
                 }
             }
         });

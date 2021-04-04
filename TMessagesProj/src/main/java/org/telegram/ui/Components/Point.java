@@ -23,6 +23,11 @@ public class Point {
         this.y = y;
     }
 
+    public void set(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
+
     public Point add(int x, int y) {
         return new Point(this.x + x, this.y + y);
     }
