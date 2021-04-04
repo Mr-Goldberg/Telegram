@@ -30,6 +30,7 @@ class AnimationEditorActivity extends BaseFragment {
     private static final int[] DURATION_ITEMS = new int[]{200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 3000};
 
     private static final int TYPE_TEXT = 0;
+    private static final int TYPE_STICKER = 1;
 
     Context context;
     ViewPagerFixed viewPager;
@@ -55,7 +56,7 @@ class AnimationEditorActivity extends BaseFragment {
                     case 3:
                         animationSettings = new AnimationSettings();
                         settingsStorage.set(animationSettings);
-                        viewPager.notifyDataSetChanged();
+                        viewPager.setAdapter(new PagerAdapter());
                         break;
                 }
             }
@@ -86,15 +87,26 @@ class AnimationEditorActivity extends BaseFragment {
 
         @Override
         public String getItemTitle(int position) {
-            return "Text";
+            switch (position) {
+                case TYPE_TEXT:
+                    return "Text";
+                case TYPE_STICKER:
+                    return "Sticker";
+                default:
+                    return null;
+            }
         }
 
         @Override
         public View createView(int viewType) {
+            LayoutInflater inflater = LayoutInflater.from(context);
             View view;
             switch (viewType) {
                 case TYPE_TEXT:
-                    view = LayoutInflater.from(context).inflate(R.layout.animation_settings_text, null);
+                    view = inflater.inflate(R.layout.animation_settings_text, null);
+                    break;
+                case TYPE_STICKER:
+                    view = inflater.inflate(R.layout.animation_settings_sticker, null);
                     break;
                 default:
                     return null;
@@ -107,29 +119,34 @@ class AnimationEditorActivity extends BaseFragment {
 
         @Override
         public int getItemCount() {
-            return 1;
+            return 2;
         }
 
         @Override
         public void bindView(View view, int position, int viewType) {
             Log.d(TAG, "bindView() " + position);
-            // Text
-            if (viewType == TYPE_TEXT) {
-                LockableScrollView scrollView = view.findViewById(R.id.scrollView);
-                {
-                    Button durationButton = view.findViewById(R.id.durationButton);
-                    durationButton.setText(formatMs(getDuration(viewType)));
-                    durationButton.setOnClickListener(button -> showDurationPopup(context, durationButton, viewType));
+            LockableScrollView scrollView = view.findViewById(R.id.scrollView);
+            {
+                Button durationButton = view.findViewById(R.id.durationButton);
+                durationButton.setText(formatMs(getDuration(viewType)));
+                durationButton.setOnClickListener(button -> showDurationPopup(context, durationButton, viewType));
+            }
+            switch (viewType) {
+                case TYPE_TEXT: {
+                    {
+                        AnimationEditorBezierView xBezierView = view.findViewById(R.id.xBezierView);
+                        xBezierView.setParams(animationSettings.textInterpolationX);
+                        xBezierView.setListener(new InterpolatorViewListener(scrollView, params -> animationSettings.textInterpolationX = params));
+                    }
+                    {
+                        AnimationEditorBezierView yBezierView = view.findViewById(R.id.yBezierView);
+                        yBezierView.setParams(animationSettings.textInterpolationY);
+                        yBezierView.setListener(new InterpolatorViewListener(scrollView, params -> animationSettings.textInterpolationY = params));
+                    }
+                    break;
                 }
-                {
-                    AnimationEditorBezierView xBezierView = view.findViewById(R.id.xBezierView);
-                    xBezierView.setParams(animationSettings.textInterpolationX);
-                    xBezierView.setListener(new InterpolatorViewListener(scrollView, params -> animationSettings.textInterpolationX = params));
-                }
-                {
-                    AnimationEditorBezierView yBezierView = view.findViewById(R.id.yBezierView);
-                    yBezierView.setParams(animationSettings.textInterpolationY);
-                    yBezierView.setListener(new InterpolatorViewListener(scrollView, params -> animationSettings.textInterpolationY = params));
+                case TYPE_STICKER: {
+                    break;
                 }
             }
         }
@@ -158,7 +175,7 @@ class AnimationEditorActivity extends BaseFragment {
         }
     }
 
-    private void showDurationPopup(Context context, View anchor, int settingsType) {
+    private void showDurationPopup(Context context, Button anchor, int settingsType) {
         PopupMenu popupMenu = new PopupMenu(context, anchor);
         Menu menu = popupMenu.getMenu();
         for (int duration : DURATION_ITEMS) {
@@ -169,15 +186,18 @@ class AnimationEditorActivity extends BaseFragment {
             int id = menuItem.getItemId();
             if (id >= DURATION_ITEMS[0] && id <= DURATION_ITEMS[DURATION_ITEMS.length - 1]) {
                 Log.d(TAG, "onItemClick() type " + settingsType + " id " + id);
+                anchor.setText(formatMs(id));
                 switch (settingsType) {
                     case TYPE_TEXT:
                         animationSettings.textDuration = id;
+                        break;
+                    case TYPE_STICKER:
+                        animationSettings.stickerDuration = id;
                         break;
                     default:
                         Log.e(TAG, "showDurationPopup() Bad type: " + settingsType);
                         return true;
                 }
-                viewPager.notifyDataSetChanged();
                 settingsStorage.set(animationSettings);
             }
 
@@ -191,6 +211,8 @@ class AnimationEditorActivity extends BaseFragment {
         switch (type) {
             case TYPE_TEXT:
                 return animationSettings.textDuration;
+            case TYPE_STICKER:
+                return animationSettings.stickerDuration;
             default:
                 Log.e(TAG, "getDuration() Bad type: " + type);
                 return -1;

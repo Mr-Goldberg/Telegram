@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-class AnimationSettingsStorage {
+public class AnimationSettingsStorage {
 
     private static final String TAG = "AnimationSettingsStorage";
     private static AnimationSettings settings;

@@ -7,7 +7,7 @@ import java.util.Locale;
 /**
  * All fields are in [0;1] range.
  */
-class AnimationSettingBezier {
+public class AnimationSettingBezier {
 
     float startX = 0;
     float endX = 1;
