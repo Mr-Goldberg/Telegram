@@ -9,7 +9,6 @@ import android.widget.FrameLayout;
 
 import com.google.android.exoplayer2.util.Log;
 
-import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -25,8 +24,16 @@ class AnimationEditorActivity extends BaseFragment {
     private static final String TAG = "AnimationEditorActivity";
     private static final int[] DURATION_ITEMS = new int[]{200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 3000};
 
+    AnimationSettingsStorage settingsStorage = new AnimationSettingsStorage();
+    AnimationSettings animationSettings;
+
+    ActionBarMenuItem durationHeaderItem;
+
     @Override
     public View createView(Context context) {
+        settingsStorage.setContext(context);
+        animationSettings = settingsStorage.load();
+
         actionBar.setTitle("Animation Settings");
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -40,15 +47,17 @@ class AnimationEditorActivity extends BaseFragment {
 
                 if (id >= DURATION_ITEMS[0] && id <= DURATION_ITEMS[DURATION_ITEMS.length - 1]) {
                     Log.d(TAG, "onItemClick() " + id);
-                    // TODO Record duration
+                    durationHeaderItem.setText(formatMs(id));
+                    animationSettings.duration = id;
+                    settingsStorage.save(animationSettings);
                 }
             }
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        ActionBarMenuItem headerItem = menu.addItem(0, R.drawable.ic_ab_other);
+        durationHeaderItem = menu.addItem(0, formatMs(animationSettings.duration));
         for (int duration : DURATION_ITEMS) {
-            headerItem.addSubItem(duration, String.format(Locale.US, "%d ms", duration));
+            durationHeaderItem.addSubItem(duration, formatMs(duration));
         }
 
         ViewPagerFixed viewPager = new ViewPagerFixed(context);
@@ -87,5 +96,9 @@ class AnimationEditorActivity extends BaseFragment {
         contentView.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP));
 
         return contentView;
+    }
+
+    private static String formatMs(int ms) {
+        return String.format(Locale.US, "%dms", ms);
     }
 }
