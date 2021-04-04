@@ -33,6 +33,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Components.Rect;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanBotCommand;
@@ -839,6 +840,11 @@ public class MessageObject {
     private static final int LINES_PER_BLOCK = 10;
 
     public ArrayList<TextLayoutBlock> textLayoutBlocks;
+
+    public static class EntryTransitionParams {
+        public Rect stickerRect = null;
+    }
+    public EntryTransitionParams entryTransitionParams;
 
     public MessageObject(int accountNum, TLRPC.Message message, String formattedMessage, String name, String userName, boolean localMessage, boolean isChannel, boolean supergroup, boolean edit) {
         localType = localMessage ? 2 : 1;

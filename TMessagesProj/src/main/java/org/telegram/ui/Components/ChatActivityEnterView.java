@@ -129,6 +129,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class ChatActivityEnterView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
 
@@ -299,12 +300,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     private Point messageEditTextLocationOnLastMessageSent; // Location of top-left text corner
 
-    // Emoji from emoji panel
-
-    public StickerEmojiCell stickerOnPanelView;
-
     //
-    // Send animation
+    // ~ Send animation
     //
 
     /*protected*/ public EditTextCaption messageEditText;
@@ -6148,10 +6145,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                     setStickersExpanded(false, true, false);
                 }
+                org.telegram.ui.Components.Rect stickerRect = null;
                 if (view instanceof StickerEmojiCell) {
-                    stickerOnPanelView = (StickerEmojiCell) view;
+                    StickerEmojiCell stickerCell = (StickerEmojiCell) view;
+                    Point stickerViewLocation = AndroidUtilities.getLocationOnScreen(stickerCell.getImageView());
+                    stickerRect = new org.telegram.ui.Components.Rect(stickerViewLocation.x, stickerViewLocation.y, stickerCell.getImageView().getWidth(), stickerCell.getImageView().getHeight());
                 }
-                ChatActivityEnterView.this.onStickerSelected(sticker, query, parent, false, notify, scheduleDate);
+                ChatActivityEnterView.this.onStickerSelected(sticker, stickerRect, query, parent, false, notify, scheduleDate);
                 if ((int) dialog_id == 0 && MessageObject.isGifDocument(sticker)) {
                     accountInstance.getMessagesController().saveGif(parent, sticker);
                 }
@@ -6413,9 +6413,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     @Override
-    public void onStickerSelected(TLRPC.Document sticker, String query, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
+    public void onStickerSelected(TLRPC.Document sticker, org.telegram.ui.Components.Rect stickerRect, String query, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
         if (isInScheduleMode() && scheduleDate == 0) {
-            AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (n, s) -> onStickerSelected(sticker, query, parent, clearsInputField, n, s));
+            AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (n, s) -> onStickerSelected(sticker, null, query, parent, clearsInputField, n, s));
         } else {
             if (slowModeTimer > 0 && !isInScheduleMode()) {
                 if (delegate != null) {
@@ -6429,7 +6429,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 emojiView.hideSearchKeyboard();
             }
             setStickersExpanded(false, true, false);
-            SendMessagesHelper.getInstance(currentAccount).sendSticker(sticker, query, dialog_id, replyingMessageObject, getThreadMessage(), parent, notify, scheduleDate);
+            MessageObject messageObject = SendMessagesHelper.getInstance(currentAccount).sendSticker(sticker, query, dialog_id, replyingMessageObject, getThreadMessage(), parent, notify, scheduleDate);
+            if (stickerRect != null) {
+                messageObject.entryTransitionParams = new MessageObject.EntryTransitionParams();
+                messageObject.entryTransitionParams.stickerRect = stickerRect;
+            }
             callDelegateOnMessageSend(null, true, scheduleDate);
             if (clearsInputField) {
                 setFieldText("");

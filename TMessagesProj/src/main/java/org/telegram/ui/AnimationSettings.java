@@ -2,7 +2,7 @@ package org.telegram.ui;
 
 public class AnimationSettings {
 
-    private static final int DEFAULT_DURATION = 200;
+    private static final int DEFAULT_DURATION = 300;
 
     // Text
 

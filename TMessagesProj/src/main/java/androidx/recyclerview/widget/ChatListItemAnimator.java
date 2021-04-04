@@ -56,7 +56,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     private final ViewGroupOverlay overlay;
     private ChatActivityEnterView chatActivityEnterView;
     private EditTextCaption messageEditText;
-    private Map<Integer, StickerEmojiCell> stickerOnPanelViews = new HashMap<>();
     private AnimationSettingsStorage animationSettingsStorage;
     private AnimationSettings animationSettings;
 
@@ -343,8 +342,12 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
                 case MessageObject.TYPE_STICKER:
                 case MessageObject.TYPE_ANIMATED_STICKER: {
+                    org.telegram.ui.Components.Rect stickerRect = null;
+                    if (messageObject.entryTransitionParams != null) {
+                        stickerRect = messageObject.entryTransitionParams.stickerRect;
+                    }
                     // From text field
-                    if (chatActivityEnterView.stickerOnPanelView == null) {
+                    if (stickerRect == null) {
                         TextView textView = new TextView(view.getContext());
                         textView.setPadding(messageEditText.getPaddingLeft(), messageEditText.getPaddingTop(), messageEditText.getPaddingRight(), messageEditText.getPaddingBottom());
                         textView.setPivotX(textView.getPaddingLeft());
@@ -362,10 +365,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                     }
                     // From sticker panel
                     else {
-                        stickerOnPanelViews.put(messageObject.stableId, chatActivityEnterView.stickerOnPanelView);
-//                        View stickerView = chatActivityEnterView.stickerOnPanelView;
-//                        overlay.add(chatActivityEnterView.stickerOnPanelView);
-                        chatActivityEnterView.stickerOnPanelView = null;
                         cell.getPhotoImage().setAspectFit(true);
                     }
                     break;
@@ -482,9 +481,12 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 final int startY;
                 Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
                 Point cellTextLocation = cellLocation.add(cell.textX, cell.textY);
-                final StickerEmojiCell stickerView = stickerOnPanelViews.get(messageObject.stableId);
+                org.telegram.ui.Components.Rect stickerRect = null;
+                if (messageObject.entryTransitionParams != null) {
+                    stickerRect = messageObject.entryTransitionParams.stickerRect;
+                }
                 // From text field
-                if (stickerView == null) {
+                if (stickerRect == null) {
                     Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
                     Point diff = inputTextLocation.subtract(cellTextLocation);
                     startY = (int) (cellLocation.y + diff.y);
@@ -525,16 +527,14 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
                 // From sticker panel
                 else {
-                    final float startX;
-                    {
-                        Point stickerViewLocation = AndroidUtilities.getLocationOnScreen(stickerView.getImageView());
-                        startX = stickerViewLocation.x;
-                        startY = (int) (stickerViewLocation.y - image.getImageY());
-                    }
+                    final float startX = stickerRect.x;
+                    startY = (int) (stickerRect.y - image.getImageY());
                     child.setY(startY);
                     final float stickerDiffX = image.getImageX() - startX;
-                    final Size stickerStartSize = new Size(stickerView.getImageView().getWidth(), stickerView.getImageView().getHeight());
+                    final Size stickerStartSize = new Size(stickerRect.width, stickerRect.height);
                     final Size stickerDiffSize = new Size(image.getImageWidth() - stickerStartSize.width, image.getImageHeight() - stickerStartSize.height);
+
+                    messageObject.entryTransitionParams = null;
 
                     ChatMessageCell.TransitionParams transition = cell.getTransitionParams();
                     transition.stickerCoords = new org.telegram.ui.Components.Rect(startX, image.getImageY(), stickerStartSize.width, stickerStartSize.height);
@@ -638,7 +638,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     private void finalizeCellAnimation(ChatMessageCell cell) {
         cell.setAlpha(1);
         cell.getPhotoImage().setAspectFit(false);
-        stickerOnPanelViews.remove(cell.getMessageObject().stableId);
+        cell.getMessageObject().entryTransitionParams = null;
 
         BaseCell.CellDrawingView child = cell.cellDrawingView;
         child.setAlpha(1);

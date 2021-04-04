@@ -6539,7 +6539,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         final ContentPreviewViewer.ContentPreviewViewerDelegate contentPreviewViewerDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
             @Override
             public void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate) {
-                chatActivityEnterView.onStickerSelected(sticker, query, parent, true, notify, scheduleDate);
+                chatActivityEnterView.onStickerSelected(sticker, null, query, parent, true, notify, scheduleDate);
             }
 
             @Override
