@@ -17,11 +17,11 @@ import org.telegram.ui.Components.Point;
 
 public class AnimationEditorBezierView extends View {
 
-    private static final String TAG = "AnimationBezierView";
+    private static final String TAG = "AnimationEditorBezierVi";
     private AnimationSettingBezier params = new AnimationSettingBezier();
     private Listener listener;
 
-    private final Point controlPoint = new Point();
+    private final Point[] controlPoints = new Point[4];
     private Point controlMoveShift;
     private int controlMovingIndex = 0;
 
@@ -62,6 +62,10 @@ public class AnimationEditorBezierView extends View {
         controlPaint.setColor(Color.BLUE);
         controlPaint.setAntiAlias(true);
         controlPaint.setStrokeWidth(AndroidUtilities.dp(2));
+
+        for (int i = 0; i < 4; ++i) {
+            controlPoints[i] = new Point();
+        }
     }
 
     public AnimationSettingBezier getParams() {
@@ -81,27 +85,21 @@ public class AnimationEditorBezierView extends View {
         this.listener = listener;
     }
 
-//    @Override
-//    public boolean dispatchTouchEvent(MotionEvent event) {
-//        return super.dispatchTouchEvent(event);
-//    }
-
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                for (int i = 0; i < 4; ++i) {
-                    setPoint(i);
-                    if (isOverPoint(event)) {
-                        controlMoveShift = controlPoint.subtract(new Point(event.getX(), event.getY()));
-                        controlMovingIndex = i;
-                        if (listener != null) {
-                            listener.onInterceptTouch(true);
-                        }
-                        return true;
+            case MotionEvent.ACTION_DOWN: {
+                int pointIndex = getPointUnderTouch(event);
+                if (pointIndex >= 0) {
+                    controlMoveShift = controlPoints[pointIndex].subtract(new Point(event.getX(), event.getY()));
+                    controlMovingIndex = pointIndex;
+                    if (listener != null) {
+                        listener.onInterceptTouch(true);
                     }
+                    return true;
                 }
                 break;
+            }
             case MotionEvent.ACTION_MOVE:
                 if (controlMoveShift != null) {
                     float x = event.getX();
@@ -171,49 +169,45 @@ public class AnimationEditorBezierView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        final float w = getWidth();
-        final float h = getHeight();
-        final AnimationSettingBezier params = this.params;
+        setPoints();
+        Point[] pts = controlPoints;
 
         path.reset();
-        path.moveTo(params.startX * w, h);
-        path.cubicTo(params.x1 * w, params.y1 * h, params.x2 * w, params.y2 * h, params.endX * w, 0);
-
+        path.moveTo(pts[0].x, pts[0].y);
+        path.cubicTo(pts[1].x, pts[1].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y);
         canvas.drawPath(path, curvePaint);
 
-        canvas.drawCircle(params.startX * w, h - controlCircleRadius / 2, controlCircleRadius, controlPaint);
-        canvas.drawCircle(params.x1 * w, params.y1 * h, controlCircleRadius, controlPaint);
-        canvas.drawCircle(params.x2 * w, params.y2 * h, controlCircleRadius, controlPaint);
-        canvas.drawCircle(params.endX * w, 0 + controlCircleRadius / 2, controlCircleRadius, controlPaint);
+        canvas.drawCircle(pts[0].x, pts[0].y + controlCircleRadius / 2, controlCircleRadius, controlPaint);
+        canvas.drawCircle(pts[1].x, pts[1].y, controlCircleRadius, controlPaint);
+        canvas.drawCircle(pts[2].x, pts[2].y, controlCircleRadius, controlPaint);
+        canvas.drawCircle(pts[3].x, pts[3].y - controlCircleRadius / 2, controlCircleRadius, controlPaint);
     }
 
-    // 0-3
-    private void setPoint(int index) {
+    private void setPoints() {
         final float w = getWidth();
         final float h = getHeight();
-        switch (index) {
-            case 0:
-                controlPoint.set(params.startX * w, h);
-                break;
-            case 1:
-                controlPoint.set(params.x1 * w, params.y1 * h);
-                break;
-            case 2:
-                controlPoint.set(params.x2 * w, params.y2 * h);
-                break;
-            case 3:
-                controlPoint.set(params.endX * w, 0);
-                break;
-        }
+        controlPoints[0].set(params.startX * w, 0);
+        controlPoints[1].set(params.x1 * w, params.y1 * h);
+        controlPoints[2].set(params.x2 * w, params.y2 * h);
+        controlPoints[3].set(params.endX * w, h);
     }
 
-    private boolean isOverPoint(MotionEvent event) {
+    private int getPointUnderTouch(MotionEvent event) {
+        for (int i = 0; i < 4; ++i) {
+            if (isOverPoint(controlPoints[i], event)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isOverPoint(Point p, MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
-        return (controlPoint.x - controlCircleTouchRadius <= x &&
-                x <= controlPoint.x + controlCircleTouchRadius &&
-                controlPoint.y - controlCircleTouchRadius <= y &&
-                y <= controlPoint.y + controlCircleTouchRadius);
+        return (p.x - controlCircleTouchRadius <= x &&
+                x <= p.x + controlCircleTouchRadius &&
+                p.y - controlCircleTouchRadius <= y &&
+                y <= p.y + controlCircleTouchRadius);
     }
 
     public interface Listener {

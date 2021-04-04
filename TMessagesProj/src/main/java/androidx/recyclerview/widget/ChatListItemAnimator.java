@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroupOverlay;
 import android.view.ViewPropertyAnimator;
+import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
@@ -417,6 +418,8 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             case MessageObject.TYPE_TEXT: {
 
                 animationDuration = animationSettings.textDuration;
+                Interpolator xInterpolator = animationSettings.textInterpolationX.makeInterpolator();
+                Interpolator yInterpolator = animationSettings.textInterpolationY.makeInterpolator();
 
                 // Y cell animation
 
@@ -447,23 +450,27 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 float textScaleDiff = 1 - startTextScale;
 
                 animatorUpdateListener = valueAnimator -> {
-                    float value = (float) valueAnimator.getAnimatedValue();
+                    float fraction = valueAnimator.getAnimatedFraction();
 
                     // Y cell animation
 
+                    float yValue = yInterpolator.getInterpolation(fraction);
                     int cellY = AndroidUtilities.getYOnScreen(cell);
-                    float y = startY - value * (startY - cellY);
+                    float y = startY - yValue * (startY - cellY);
                     child.setY(y);
 
                     // X background animation
 
-                    transition.backgroundDrawableAlpha = value;
-                    transition.backgroundDrawableCurrentLeft = transition.backgroundDrawableTargetLeft - (int) ((1.0f - value) * leftDiff);
-                    cell.invalidate();
+                    {
+                        float xValue = xInterpolator.getInterpolation(fraction);
+                        transition.backgroundDrawableAlpha = xValue;
+                        transition.backgroundDrawableCurrentLeft = transition.backgroundDrawableTargetLeft - (int) ((1.0f - xValue) * leftDiff);
+                        cell.invalidate();
+                    }
 
                     // Text scale animation
 
-                    transition.textScale = startTextScale + textScaleDiff * value;
+                    transition.textScale = startTextScale + textScaleDiff * yValue;
                 };
                 break;
             }
@@ -561,7 +568,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
         ValueAnimator animation = ValueAnimator.ofFloat(0, 1).setDuration(animationDuration);
         child.animator = animation;
-        animation.setInterpolator(translationInterpolator);
+//        animation.setInterpolator(translationInterpolator);
         animation.addUpdateListener(animatorUpdateListener);
         animation.addListener(new AnimatorListenerAdapter() {
             @Override

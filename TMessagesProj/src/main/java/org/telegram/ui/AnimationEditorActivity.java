@@ -56,7 +56,7 @@ class AnimationEditorActivity extends BaseFragment {
                     case 3:
                         animationSettings = new AnimationSettings();
                         settingsStorage.set(animationSettings);
-                        viewPager.setAdapter(new PagerAdapter());
+                        viewPager.setAdapter(new PagerAdapter()); // FIXME
                         break;
                 }
             }
@@ -166,6 +166,7 @@ class AnimationEditorActivity extends BaseFragment {
         public void onInterceptTouch(boolean intercept) {
             Log.d(TAG, "onInterceptTouch() " + intercept);
             scrollView.setScrollingEnabled(!intercept);
+            viewPager.setScrollingEnabled(!intercept);
         }
 
         @Override

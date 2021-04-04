@@ -240,7 +240,18 @@ public class ViewPagerFixed extends FrameLayout {
         return true;
     }
 
+    private boolean scrollable = true;
+
+    public void setScrollingEnabled(boolean enabled) {
+        scrollable = enabled;
+    }
+
+    public boolean isScrollable() {
+        return scrollable;
+    }
+
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (!scrollable) return false;
         if (tabsView != null && tabsView.isAnimatingIndicator()) {
             return false;
         }
@@ -261,6 +272,7 @@ public class ViewPagerFixed extends FrameLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
+        if (!scrollable) return false;
         if (tabsView != null && tabsView.animatingIndicator) {
             return false;
         }

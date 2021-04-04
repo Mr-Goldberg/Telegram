@@ -1,6 +1,10 @@
 package org.telegram.ui;
 
+import android.graphics.Path;
+import android.view.animation.Interpolator;
+
 import androidx.annotation.NonNull;
+import androidx.core.view.animation.PathInterpolatorCompat;
 
 import java.util.Locale;
 
@@ -13,14 +17,23 @@ public class AnimationSettingBezier {
     float endX = 1;
 
     float x1 = 0.33f;
-    float y1 = 1;
+    float y1 = 0;
     float x2 = 0;
-    float y2 = 0;
+    float y2 = 1;
 
     public AnimationSettingBezier() {
     }
 
     public AnimationSettingBezier(float startX, float endX, float x1, float y1, float x2, float y2) {
+        this.startX = startX;
+        this.endX = endX;
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+    }
+
+    public void set(float startX, float endX, float x1, float y1, float x2, float y2) {
         this.startX = startX;
         this.endX = endX;
         this.x1 = x1;
@@ -36,6 +49,14 @@ public class AnimationSettingBezier {
         this.y1 = other.y1;
         this.x2 = other.x2;
         this.y2 = other.y2;
+    }
+
+    public Interpolator makeInterpolator() {
+        Path path = new Path();
+        path.lineTo(startX, 0);
+        path.cubicTo(x1, y1, x2, y2, endX, 1);
+        path.lineTo(1, 1);
+        return PathInterpolatorCompat.create(path);
     }
 
     public AnimationSettingBezier clone2() {
