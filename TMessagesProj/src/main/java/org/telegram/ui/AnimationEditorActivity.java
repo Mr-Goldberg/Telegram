@@ -22,6 +22,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
 
 import java.util.Locale;
+import java.util.function.Consumer;
 
 class AnimationEditorActivity extends BaseFragment {
 
@@ -30,6 +31,7 @@ class AnimationEditorActivity extends BaseFragment {
 
     private static final int TYPE_TEXT = 0;
 
+    Context context;
     ViewPagerFixed viewPager;
 
     AnimationSettingsStorage settingsStorage = new AnimationSettingsStorage();
@@ -37,6 +39,7 @@ class AnimationEditorActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
+        this.context = context;
         settingsStorage.setContext(context);
         animationSettings = settingsStorage.load();
 
@@ -65,57 +68,7 @@ class AnimationEditorActivity extends BaseFragment {
         headerItem.addSubItem(3, "Restore to Default");
 
         viewPager = new ViewPagerFixed(context);
-        viewPager.setAdapter(new ViewPagerFixed.Adapter() {
-
-            @Override
-            public int getItemViewType(int position) {
-                return position;
-            }
-
-            @Override
-            public String getItemTitle(int position) {
-                return "Text";
-            }
-
-            @Override
-            public View createView(int viewType) {
-                View view;
-                switch (viewType) {
-                    case TYPE_TEXT:
-                        view = LayoutInflater.from(context).inflate(R.layout.animation_settings_text, null);
-                        break;
-                    default:
-                        return null;
-                }
-
-                // TODO setup layout style
-
-                return view;
-            }
-
-            @Override
-            public int getItemCount() {
-                return 1;
-            }
-
-            @Override
-            public void bindView(View view, int position, int viewType) {
-                Log.d(TAG, "bindView() " + position);
-                // Text
-                if (viewType == TYPE_TEXT) {
-                    Button durationButton = view.findViewById(R.id.durationButton);
-                    durationButton.setText(formatMs(getDuration(viewType)));
-                    durationButton.setOnClickListener(button -> showDurationPopup(context, durationButton, viewType));
-                    AnimationEditorBezierView xBezierView = view.findViewById(R.id.xBezierView);
-                    xBezierView.setListener(params -> {
-                        animationSettings.textInterpolationX = params;
-                        settingsStorage.save(animationSettings);
-                    });
-                    xBezierView.setParams(animationSettings.textInterpolationX);
-                }
-            }
-        });
-
+        viewPager.setAdapter(new PagerAdapter());
         FrameLayout contentView = new FrameLayout(context);
         contentView.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM, 0, 44, 0, 0));
         ViewPagerFixed.TabsView tabsView = viewPager.createTabsView();
@@ -123,6 +76,86 @@ class AnimationEditorActivity extends BaseFragment {
         contentView.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP));
 
         return contentView;
+    }
+
+    private class PagerAdapter extends ViewPagerFixed.Adapter {
+        @Override
+        public int getItemViewType(int position) {
+            return position;
+        }
+
+        @Override
+        public String getItemTitle(int position) {
+            return "Text";
+        }
+
+        @Override
+        public View createView(int viewType) {
+            View view;
+            switch (viewType) {
+                case TYPE_TEXT:
+                    view = LayoutInflater.from(context).inflate(R.layout.animation_settings_text, null);
+                    break;
+                default:
+                    return null;
+            }
+
+            // TODO setup layout style
+
+            return view;
+        }
+
+        @Override
+        public int getItemCount() {
+            return 1;
+        }
+
+        @Override
+        public void bindView(View view, int position, int viewType) {
+            Log.d(TAG, "bindView() " + position);
+            // Text
+            if (viewType == TYPE_TEXT) {
+                LockableScrollView scrollView = view.findViewById(R.id.scrollView);
+                {
+                    Button durationButton = view.findViewById(R.id.durationButton);
+                    durationButton.setText(formatMs(getDuration(viewType)));
+                    durationButton.setOnClickListener(button -> showDurationPopup(context, durationButton, viewType));
+                }
+                {
+                    AnimationEditorBezierView xBezierView = view.findViewById(R.id.xBezierView);
+                    xBezierView.setParams(animationSettings.textInterpolationX);
+                    xBezierView.setListener(new InterpolatorViewListener(scrollView, params -> animationSettings.textInterpolationX = params));
+                }
+                {
+                    AnimationEditorBezierView yBezierView = view.findViewById(R.id.yBezierView);
+                    yBezierView.setParams(animationSettings.textInterpolationX);
+                    yBezierView.setListener(new InterpolatorViewListener(scrollView, params -> animationSettings.textInterpolationY = params));
+                }
+            }
+        }
+    }
+
+    private class InterpolatorViewListener implements AnimationEditorBezierView.Listener {
+
+        LockableScrollView scrollView;
+        Consumer<AnimationSettingBezier> setter;
+
+        public InterpolatorViewListener(LockableScrollView scrollView, Consumer<AnimationSettingBezier> setter) {
+            this.setter = setter;
+            this.scrollView = scrollView;
+        }
+
+        @Override
+        public void onInterceptTouch(boolean intercept) {
+            Log.d(TAG, "onInterceptTouch() " + intercept);
+            scrollView.setScrollingEnabled(!intercept);
+        }
+
+        @Override
+        public void onParamsChanged(AnimationSettingBezier params) {
+            setter.accept(params);
+            settingsStorage.save(animationSettings);
+        }
     }
 
     private void showDurationPopup(Context context, View anchor, int settingsType) {

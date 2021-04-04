@@ -28,8 +28,8 @@ public class AnimationEditorBezierView extends View {
     private final Path path = new Path();
     private final Paint curvePaint = new Paint();
     private final Paint controlPaint = new Paint();
-    private static final float controlCircleRadius = AndroidUtilities.dp(20);
-    private static final float controlCircleTouchRadius = AndroidUtilities.dp(40);
+    private static final float controlCircleRadius = AndroidUtilities.dp(12);
+    private static final float controlCircleTouchRadius = AndroidUtilities.dp(30);
 
     public AnimationEditorBezierView(Context context) {
         super(context);
@@ -81,6 +81,11 @@ public class AnimationEditorBezierView extends View {
         this.listener = listener;
     }
 
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent event) {
+//        return super.dispatchTouchEvent(event);
+//    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
@@ -90,6 +95,9 @@ public class AnimationEditorBezierView extends View {
                     if (isOverPoint(event)) {
                         controlMoveShift = controlPoint.subtract(new Point(event.getX(), event.getY()));
                         controlMovingIndex = i;
+                        if (listener != null) {
+                            listener.onInterceptTouch(true);
+                        }
                         return true;
                     }
                 }
@@ -144,6 +152,12 @@ public class AnimationEditorBezierView extends View {
                 Log.d(TAG, "ACTION_UP: " + params);
                 if (listener != null) {
                     listener.onParamsChanged(new AnimationSettingBezier(params));
+                    listener.onInterceptTouch(false);
+                }
+                return true;
+            case MotionEvent.ACTION_CANCEL:
+                if (listener != null) {
+                    listener.onInterceptTouch(false);
                 }
                 return true;
             default:
@@ -203,6 +217,8 @@ public class AnimationEditorBezierView extends View {
     }
 
     public interface Listener {
+        void onInterceptTouch(boolean intercept);
+
         void onParamsChanged(AnimationSettingBezier params);
     }
 }
