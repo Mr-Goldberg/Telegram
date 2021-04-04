@@ -170,7 +170,7 @@ public class ViewPagerFixed extends FrameLayout {
         return tabsView;
     }
 
-    private void updateViewForIndex(int index) {
+    public void updateViewForIndex(int index) {
         int adapterPosition = index == 0 ? currentPosition : nextPosition;
         if (viewPages[index] == null) {
             viewTypes[index] = adapter.getItemViewType(adapterPosition);

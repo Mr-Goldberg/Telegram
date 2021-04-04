@@ -31,6 +31,7 @@ class AnimationEditorActivity extends BaseFragment {
 
     private static final int TYPE_TEXT = 0;
     private static final int TYPE_STICKER = 1;
+    private static final int TYPE_EMOJI = 2;
 
     Context context;
     ViewPagerFixed viewPager;
@@ -56,7 +57,7 @@ class AnimationEditorActivity extends BaseFragment {
                     case 3:
                         animationSettings = new AnimationSettings();
                         settingsStorage.set(animationSettings);
-                        viewPager.setAdapter(new PagerAdapter()); // FIXME
+                        viewPager.updateViewForIndex(0);
                         break;
                 }
             }
@@ -92,6 +93,8 @@ class AnimationEditorActivity extends BaseFragment {
                     return "Text";
                 case TYPE_STICKER:
                     return "Sticker";
+                case TYPE_EMOJI:
+                    return "Emoji";
                 default:
                     return null;
             }
@@ -108,6 +111,9 @@ class AnimationEditorActivity extends BaseFragment {
                 case TYPE_STICKER:
                     view = inflater.inflate(R.layout.animation_settings_sticker, null);
                     break;
+                case TYPE_EMOJI:
+                    view = inflater.inflate(R.layout.animation_settings_emoji, null);
+                    break;
                 default:
                     return null;
             }
@@ -119,12 +125,12 @@ class AnimationEditorActivity extends BaseFragment {
 
         @Override
         public int getItemCount() {
-            return 2;
+            return 3;
         }
 
         @Override
         public void bindView(View view, int position, int viewType) {
-            Log.d(TAG, "bindView() " + position);
+//            Log.d(TAG, "bindView() " + position);
             LockableScrollView scrollView = view.findViewById(R.id.scrollView);
             {
                 Button durationButton = view.findViewById(R.id.durationButton);
@@ -164,7 +170,7 @@ class AnimationEditorActivity extends BaseFragment {
 
         @Override
         public void onInterceptTouch(boolean intercept) {
-            Log.d(TAG, "onInterceptTouch() " + intercept);
+//            Log.d(TAG, "onInterceptTouch() " + intercept);
             scrollView.setScrollingEnabled(!intercept);
             viewPager.setScrollingEnabled(!intercept);
         }
@@ -186,7 +192,7 @@ class AnimationEditorActivity extends BaseFragment {
         popupMenu.setOnMenuItemClickListener(menuItem -> {
             int id = menuItem.getItemId();
             if (id >= DURATION_ITEMS[0] && id <= DURATION_ITEMS[DURATION_ITEMS.length - 1]) {
-                Log.d(TAG, "onItemClick() type " + settingsType + " id " + id);
+//                Log.d(TAG, "onItemClick() type " + settingsType + " id " + id);
                 anchor.setText(formatMs(id));
                 switch (settingsType) {
                     case TYPE_TEXT:
@@ -194,6 +200,9 @@ class AnimationEditorActivity extends BaseFragment {
                         break;
                     case TYPE_STICKER:
                         animationSettings.stickerDuration = id;
+                        break;
+                    case TYPE_EMOJI:
+                        animationSettings.emojiDuration = id;
                         break;
                     default:
                         Log.e(TAG, "showDurationPopup() Bad type: " + settingsType);
@@ -214,6 +223,8 @@ class AnimationEditorActivity extends BaseFragment {
                 return animationSettings.textDuration;
             case TYPE_STICKER:
                 return animationSettings.stickerDuration;
+            case TYPE_EMOJI:
+                return animationSettings.emojiDuration;
             default:
                 Log.e(TAG, "getDuration() Bad type: " + type);
                 return -1;
