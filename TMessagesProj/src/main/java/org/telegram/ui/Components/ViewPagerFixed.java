@@ -170,6 +170,10 @@ public class ViewPagerFixed extends FrameLayout {
         return tabsView;
     }
 
+    public void notifyDataSetChanged() {
+        updateViewForIndex(currentPosition);
+    }
+
     private void updateViewForIndex(int index) {
         int adapterPosition = index == 0 ? currentPosition : nextPosition;
         if (viewPages[index] == null) {
