@@ -17,4 +17,20 @@ class AnimationSettings {
     // Sticker from single text emoji
 
     int emojiDuration = DEFAULT_DURATION;
+
+    AnimationSettings() {}
+
+    AnimationSettings(AnimationSettings other) {
+        this.textDuration = other.textDuration;
+        this.textInterpolationX = other.textInterpolationX.clone2();
+        this.textInterpolationY = other.textInterpolationY.clone2();
+
+        stickerDuration = other.stickerDuration;
+
+        emojiDuration = other.emojiDuration;
+    }
+
+    AnimationSettings clone2() {
+        return new AnimationSettings(this);
+    }
 }

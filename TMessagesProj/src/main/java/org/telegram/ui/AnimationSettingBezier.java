@@ -38,6 +38,10 @@ class AnimationSettingBezier {
         this.y2 = other.y2;
     }
 
+    public AnimationSettingBezier clone2() {
+        return new AnimationSettingBezier(this);
+    }
+
     @NonNull
     @Override
     public String toString() {

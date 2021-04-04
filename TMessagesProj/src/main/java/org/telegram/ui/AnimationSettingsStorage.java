@@ -19,14 +19,32 @@ import java.io.InputStreamReader;
 class AnimationSettingsStorage {
 
     private static final String TAG = "AnimationSettingsStorage";
-    private final Gson gson = new GsonBuilder().create();
-    private ContextWrapper contextWrapper;
+    private static AnimationSettings settings;
 
-    void setContext(Context context) {
+    private final Gson gson = new GsonBuilder().create();
+    private final ContextWrapper contextWrapper;
+
+    public AnimationSettingsStorage(Context context) {
         contextWrapper = new ContextWrapper(context);
     }
 
-    void save(AnimationSettings animationSettings) {
+    public AnimationSettings get() {
+        if (settings == null) {
+            reload();
+        }
+        return new AnimationSettings(settings);
+    }
+
+    public void set(AnimationSettings settings) {
+        AnimationSettingsStorage.settings = new AnimationSettings(settings);
+        save(settings);
+    }
+
+    public void reload() {
+        AnimationSettingsStorage.settings = load();
+    }
+
+    private void save(AnimationSettings animationSettings) {
         BufferedWriter writer = null;
         try {
             String jsonString = gson.toJson(animationSettings);
@@ -55,7 +73,7 @@ class AnimationSettingsStorage {
         }
     }
 
-    AnimationSettings load() {
+    private AnimationSettings load() {
         InputStream inputStream = null;
         try {
             File settingsFile = getSettingsFile();

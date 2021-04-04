@@ -34,14 +34,14 @@ class AnimationEditorActivity extends BaseFragment {
     Context context;
     ViewPagerFixed viewPager;
 
-    AnimationSettingsStorage settingsStorage = new AnimationSettingsStorage();
+    AnimationSettingsStorage settingsStorage;
     AnimationSettings animationSettings;
 
     @Override
     public View createView(Context context) {
         this.context = context;
-        settingsStorage.setContext(context);
-        animationSettings = settingsStorage.load();
+        settingsStorage = new AnimationSettingsStorage(context);
+        animationSettings = settingsStorage.get();
 
         actionBar.setTitle("Animation Settings");
         actionBar.setBackButtonDrawable(new BackDrawable(false));
@@ -54,7 +54,7 @@ class AnimationEditorActivity extends BaseFragment {
                         break;
                     case 3:
                         animationSettings = new AnimationSettings();
-                        settingsStorage.save(animationSettings);
+                        settingsStorage.set(animationSettings);
                         viewPager.notifyDataSetChanged();
                         break;
                 }
@@ -128,7 +128,7 @@ class AnimationEditorActivity extends BaseFragment {
                 }
                 {
                     AnimationEditorBezierView yBezierView = view.findViewById(R.id.yBezierView);
-                    yBezierView.setParams(animationSettings.textInterpolationX);
+                    yBezierView.setParams(animationSettings.textInterpolationY);
                     yBezierView.setListener(new InterpolatorViewListener(scrollView, params -> animationSettings.textInterpolationY = params));
                 }
             }
@@ -154,7 +154,7 @@ class AnimationEditorActivity extends BaseFragment {
         @Override
         public void onParamsChanged(AnimationSettingBezier params) {
             setter.accept(params);
-            settingsStorage.save(animationSettings);
+            settingsStorage.set(animationSettings);
         }
     }
 
@@ -178,7 +178,7 @@ class AnimationEditorActivity extends BaseFragment {
                         return true;
                 }
                 viewPager.notifyDataSetChanged();
-                settingsStorage.save(animationSettings);
+                settingsStorage.set(animationSettings);
             }
 
             return true;
