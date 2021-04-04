@@ -838,9 +838,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         };
         roundVideoPlayingDrawable = new RoundVideoPlayingDrawable(this);
-
-        myPaint.setColor(Color.GRAY);
-        myPaint.setStyle(Paint.Style.FILL);
     }
 
     private void createPollUI() {
@@ -9663,19 +9660,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
-    // TODO remove on release
-    private static final String LTAG = "ChatMessageCell";
-    private static final Paint myPaint = new Paint();
-    private int drawCount = 0;
-
     @SuppressLint("WrongCall")
     @Override
     protected void onCellDraw(Canvas canvas) {
-//        Log.d(LTAG, "onCellDraw() " + drawCount + " " + this.photoImage);
-
-        ++drawCount;
-
-
         if (currentMessageObject == null) {
             return;
         }

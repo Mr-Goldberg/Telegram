@@ -21642,13 +21642,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 view = new ChatLoadingCell(mContext);
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
-            Log.d("ChatActivity", "onCreateViewHolder() " + viewType + " -> " + view);
+//            Log.d("ChatActivity", "onCreateViewHolder() " + viewType + " -> " + view);
             return new RecyclerListView.Holder(view);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            Log.d("ChatActivity", "onBindViewHolder() " + position + " -> " + getItemViewType(position));
+//            Log.d("ChatActivity", "onBindViewHolder() " + position + " -> " + getItemViewType(position));
             if (position == botInfoRow) {
                 BotHelpCell helpView = (BotHelpCell) holder.itemView;
                 if (UserObject.isReplyUser(currentUser)) {

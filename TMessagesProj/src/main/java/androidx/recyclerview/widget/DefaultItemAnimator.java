@@ -113,7 +113,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     @Override
     public void runPendingAnimations() {
-        Log.d(TAG, "runPendingAnimations()");
+//        Log.d(TAG, "runPendingAnimations()");
         boolean removalsPending = !mPendingRemovals.isEmpty();
         boolean movesPending = !mPendingMoves.isEmpty();
         boolean changesPending = !mPendingChanges.isEmpty();
@@ -250,7 +250,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     @Override
     public boolean animateAdd(final RecyclerView.ViewHolder holder) {
-        Log.d(TAG, "animateAdd()");
+//        Log.d(TAG, "animateAdd()");
         resetAnimation(holder);
         holder.itemView.setAlpha(0);
         mPendingAdditions.add(holder);
@@ -258,7 +258,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     public void animateAddImpl(final RecyclerView.ViewHolder holder) {
-        Log.d(TAG, "animateAddImpl()");
+//        Log.d(TAG, "animateAddImpl()");
         final View view = holder.itemView;
         final ViewPropertyAnimator animation = view.animate();
         mAddAnimations.add(holder);
@@ -287,7 +287,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     @Override
     public boolean animateMove(final RecyclerView.ViewHolder holder, ItemHolderInfo info, int fromX, int fromY,
             int toX, int toY) {
-        Log.d(TAG, "animateMove()");
+//        Log.d(TAG, "animateMove()");
         final View view = holder.itemView;
         fromX += (int) holder.itemView.getTranslationX();
         fromY += (int) holder.itemView.getTranslationY();
@@ -313,7 +313,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     protected void animateMoveImpl(final RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
-        Log.d(TAG, "animateMoveImpl()");
+//        Log.d(TAG, "animateMoveImpl()");
         int fromX = moveInfo.fromX;
         int fromY = moveInfo.fromY;
         int toX = moveInfo.toX;
