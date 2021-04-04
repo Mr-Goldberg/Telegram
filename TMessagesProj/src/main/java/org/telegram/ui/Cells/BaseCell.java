@@ -135,6 +135,12 @@ public abstract class BaseCell extends ViewGroup {
     }
 
     @Override
+    public void invalidate(int l, int t, int r, int b) {
+        super.invalidate(l, t, r, b);
+        cellDrawingView.invalidate(l, t, r, b);
+    }
+
+    @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
 //        Log.d(TAG, "onLayout() " + left + " " + top + " " + right + " " + bottom);
 
