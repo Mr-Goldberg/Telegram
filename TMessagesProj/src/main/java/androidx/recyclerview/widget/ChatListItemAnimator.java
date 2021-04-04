@@ -96,7 +96,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public void runPendingAnimations() {
-        Log.d(TAG, "runPendingAnimations()");
+//        Log.d(TAG, "runPendingAnimations()");
         boolean removalsPending = !mPendingRemovals.isEmpty();
         boolean movesPending = !mPendingMoves.isEmpty();
         boolean changesPending = !mPendingChanges.isEmpty();
@@ -144,7 +144,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     long alphaEnterDelay;
 
     private void runAlphaEnterTransition() {
-        Log.d(TAG, "runAlphaEnterTransition()");
+//        Log.d(TAG, "runAlphaEnterTransition()");
         boolean removalsPending = !mPendingRemovals.isEmpty();
         boolean movesPending = !mPendingMoves.isEmpty();
         boolean changesPending = !mPendingChanges.isEmpty();
@@ -220,7 +220,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     private void runMessageEnterTransition() {
-        Log.d(TAG, "runMessageEnterTransition()");
+//        Log.d(TAG, "runMessageEnterTransition()");
         boolean removalsPending = !mPendingRemovals.isEmpty();
         boolean movesPending = !mPendingMoves.isEmpty();
         boolean changesPending = !mPendingChanges.isEmpty();
@@ -273,7 +273,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     // It might be newly added to the adapter or simply become visible due to other factors.
     @Override
     public boolean animateAppearance(@NonNull RecyclerView.ViewHolder viewHolder, @Nullable ItemHolderInfo preLayoutInfo, @NonNull ItemHolderInfo postLayoutInfo) {
-        Log.d(TAG, "animateAppearance() " + viewHolder.getAdapterPosition());
+//        Log.d(TAG, "animateAppearance() " + viewHolder.getAdapterPosition());
 
         // Calls animateAdd() internally
         boolean res = super.animateAppearance(viewHolder, preLayoutInfo, postLayoutInfo);
@@ -324,7 +324,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     // Called when an item is added to the RecyclerView
     @Override
     public boolean animateAdd(RecyclerView.ViewHolder holder) {
-        Log.d(TAG, "animateAdd() " + holder.getAdapterPosition());
+//        Log.d(TAG, "animateAdd() " + holder.getAdapterPosition());
         resetAnimation(holder);
         View view = holder.itemView;
 
@@ -332,7 +332,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
             ChatMessageCell cell = (ChatMessageCell) view;
             View child = cell.cellDrawingView;
             MessageObject messageObject = cell.getMessageObject();
-            Log.d(TAG, "animateAdd() type " + messageObject.type + " " + messageObject.stableId);
+//            Log.d(TAG, "animateAdd() type " + messageObject.type + " " + messageObject.stableId);
             cell.getTransitionParams().resetEntryAnimationParams();
             switch (messageObject.type) {
                 case MessageObject.TYPE_TEXT: {
@@ -391,7 +391,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     public void animateAddImpl(final RecyclerView.ViewHolder holder, int addedItemsHeight) {
         long animationDuration = getMoveDuration();
         final View view = holder.itemView;
-        Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition());
+//        Log.d(TAG, "animateAddImpl(2) " + holder.getAdapterPosition());
         mAddAnimations.add(holder);
 
         if (useDefaultAddAnimation(view)) {
@@ -595,7 +595,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     private void animateAddImplDefault(final RecyclerView.ViewHolder holder, int addedItemsHeight) {
-        Log.d(TAG, "animateAddImplDefault() " + holder.getAdapterPosition());
+//        Log.d(TAG, "animateAddImplDefault() " + holder.getAdapterPosition());
         final View view = holder.itemView;
         final ViewPropertyAnimator animation = view.animate();
         view.setTranslationY(addedItemsHeight);
@@ -1180,7 +1180,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     @Override
     public boolean animateChange(RecyclerView.ViewHolder oldHolder, RecyclerView.ViewHolder newHolder, ItemHolderInfo info,
                                  int fromX, int fromY, int toX, int toY) {
-        Log.d(TAG, "animateChange() " + oldHolder.getAdapterPosition() + "->" + newHolder.getAdapterPosition() + " " + fromX + "->" + toX + " " + fromY + "->" + toY);
+//        Log.d(TAG, "animateChange() " + oldHolder.getAdapterPosition() + "->" + newHolder.getAdapterPosition() + " " + fromX + "->" + toX + " " + fromY + "->" + toY);
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("animate change");
         }
@@ -1539,7 +1539,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
     @Override
     public void animateAddImpl(RecyclerView.ViewHolder holder) {
-        Log.d(TAG, "animateAddImpl(1) " + holder.getAdapterPosition());
+//        Log.d(TAG, "animateAddImpl(1) " + holder.getAdapterPosition());
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("animate add impl");
         }
