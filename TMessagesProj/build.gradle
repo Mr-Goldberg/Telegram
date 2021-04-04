@@ -49,7 +49,7 @@ android {
     buildToolsVersion '30.0.3'
     ndkVersion "21.1.6352462"
 
-    defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = "org.telegram.messenger_goldberg"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
@@ -307,8 +307,7 @@ android {
     }
 
     defaultConfig {
-//        minSdkVersion 16
-        minSdkVersion 21
+        minSdkVersion 18 // TODO restore this to 16 by copying ViewOverlay src code to the repo and adding such an overlay manually
         targetSdkVersion 29
         versionName "7.6.0"
 
