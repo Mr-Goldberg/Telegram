@@ -476,7 +476,6 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
             case MessageObject.TYPE_STICKER:
             case MessageObject.TYPE_ANIMATED_STICKER: {
-                animationDuration = animationSettings.stickerDuration;
                 ImageReceiver image = cell.getPhotoImage();
                 final int startY;
                 Point cellLocation = AndroidUtilities.getLocationOnScreen(cell);
@@ -487,6 +486,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
                 // From text field
                 if (stickerRect == null) {
+                    animationDuration = animationSettings.emojiDuration;
                     Point inputTextLocation = chatActivityEnterView.getTextLocationOnLastMessageSent();
                     Point diff = inputTextLocation.subtract(cellTextLocation);
                     startY = (int) (cellLocation.y + diff.y);
@@ -527,6 +527,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 }
                 // From sticker panel
                 else {
+                    animationDuration = animationSettings.stickerDuration;
                     final float startX = stickerRect.x;
                     startY = (int) (stickerRect.y - image.getImageY());
                     child.setY(startY);
